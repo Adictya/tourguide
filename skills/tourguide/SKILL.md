@@ -1,6 +1,9 @@
 ---
 name: tourguide
 description: Create guided codebase tours that teach a repository inside Neovim using the included TourGuide runtime. Use this skill whenever the user asks for a code walkthrough, architecture review, onboarding tour, guided review path, feature-path explanation, bug-path explanation, migration tour, or a TourGuide Lua file. Also use it when the user wants to show or run an existing tour with Neovim and the included tourguide.lua runtime.
+metadata:
+  author: adictya
+  version: "0.1"
 ---
 
 # TourGuide Authoring Skill
