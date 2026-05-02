@@ -1,0 +1,133 @@
+*tourguide.nvim* Guided codebase tours for Neovim
+
+===============================================================================
+INTRODUCTION                                                       *tourguide*
+
+tourguide.nvim opens ordered code walkthroughs from Lua tour files. Tours can
+mix markdown explanation buffers, source file annotations, and split views for
+cross-file control/data flow.
+
+===============================================================================
+COMMANDS                                                     *tourguide-commands*
+
+                                                        *:TourGuide*
+:TourGuide {path-or-module}
+        Start a tour from a Lua file path or require-able Lua module.
+
+                                                        *:TourGuideNext*
+:TourGuideNext
+        Move to the next tour step.
+
+                                                        *:TourGuidePrev*
+:TourGuidePrev
+        Move to the previous tour step.
+
+                                                        *:TourGuideNextTopic*
+:TourGuideNextTopic
+        Move to the first step of the next top-level topic.
+
+                                                        *:TourGuidePrevTopic*
+:TourGuidePrevTopic
+        Move to the first step of the previous top-level topic.
+
+                                                        *:TourGuideJump*
+:TourGuideJump {n}
+        Jump to step number {n}.
+
+                                                        *:TourGuideClose*
+:TourGuideClose
+        Close the tour sidebar and clear annotations.
+
+===============================================================================
+SETUP                                                           *tourguide-setup*
+
+The plugin auto-registers commands from plugin/tourguide.lua. Optional setup:
+
+>lua
+  require("tourguide").setup({ sidebar_width = 34, prompt_keymaps = true })
+<
+
+TourGuide prompts for temporary normal-mode mappings the first time a tour is
+started. Preferences are saved at:
+
+>
+  stdpath("state")/tourguide/keymaps.json
+<
+
+Empty prompt answers disable individual mappings. Temporary mappings are active
+only while a tour is running; closing the tour restores replaced global mappings.
+Use `prompt_keymaps = false` to rely on commands only.
+
+==============================================================================
+BUNDLED LOADER                                           *tourguide-bundled*
+
+Run `make bundle` from the repository root to generate:
+
+>text
+  skills/tourguide/tourguide.lua
+<
+
+That file registers the runtime modules with package.preload and then runs the
+same setup path as plugin/tourguide.lua. It is intended to live beside the
+TourGuide authoring skill and should not be edited manually.
+
+===============================================================================
+TOUR FILES                                                     *tourguide-tours*
+
+A tour returns a Lua table:
+
+>lua
+  return {
+    id = "tour_id",
+    title = "Tour Title",
+    root = vim.fn.getcwd(),
+    topics = {
+      {
+        title = "1. Topic",
+        children = {
+          { title = "Concept", markdown = "# Markdown" },
+          {
+            title = "File step",
+            file = "src/main.ts",
+            sections = {
+              { range = { 10, 20 }, note = "Highlighted explanation." },
+            },
+          },
+        },
+      },
+    },
+  }
+<
+
+Section locators:
+
+- range:  { range = { start_line, end_line } }
+- search: { search = "literal text", context = 8 }
+- symbol: { symbol = "function name", context = 8 }
+
+Split flow steps:
+
+>lua
+  {
+    title = "Cross-file flow",
+    layout = "vertical", -- or "horizontal"
+    flow = true,         -- adds [01], [02], ... note prefixes
+    panes = {
+      { file = "src/a.ts", sections = { { range = { 1, 20 }, note = "Start." } } },
+      { file = "src/b.ts", sections = { { range = { 30, 50 }, note = "Continue." } } },
+    },
+  }
+<
+
+===============================================================================
+HIGHLIGHTS                                                *tourguide-highlights*
+
+TourGuideTitle
+TourGuideTopic
+TourGuideActive
+TourGuideFile
+TourGuidePrefix
+TourGuideNote
+TourGuideFlowSection
+
+vim:tw=78:ts=8:ft=help:norl:
