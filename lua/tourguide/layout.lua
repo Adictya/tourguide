@@ -48,7 +48,6 @@ local function with_flow_numbers(sections, start_index)
   for _, section in ipairs(sections or {}) do
     local copy = vim.deepcopy(section)
     copy.note = string.format("[%02d] ", n) .. (copy.note or "")
-    copy.hl = copy.hl or "TourGuideFlowSection"
     table.insert(numbered, copy)
     n = n + 1
   end

@@ -1,12 +1,12 @@
 # tourguide.nvim
 
-Guided codebase tours for Neovim. A tour is a Lua table that describes topics, ordered steps, source files, highlighted code sections, virtual notes, markdown-only explanation pages, and split views for cross-file flows.
+Guided codebase tours for Neovim. A tour is a Lua table that describes topics, ordered steps, source files, focused code sections, virtual notes, markdown-only explanation pages, and split views for cross-file flows.
 
 ## Features
 
 - Topic/subtopic sidebar with section and topic navigation.
 - Source files opened in real buffers without modifying contents.
-- Code sections highlighted with extmarks and virtual notes.
+- Code sections focused by dimming surrounding lines with extmarks and virtual notes.
 - Markdown explanation steps in scratch buffers.
 - Vertical/horizontal split steps for call paths or data flow across files.
 - Flow numbering across split panes.
@@ -115,4 +115,4 @@ return {
 - `TourGuideFile`
 - `TourGuidePrefix`
 - `TourGuideNote`
-- `TourGuideFlowSection`
+- `TourGuideDim`
