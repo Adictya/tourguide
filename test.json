@@ -1,0 +1,610 @@
+{
+  "schemaVersion": 1,
+  "id": "solid_effects_async",
+  "title": "Solid 2.0 Effects + Async Tour",
+  "intent": "Explain why Solid 2.0 split effects into compute/apply phases and how async readiness flows through effects, scheduling, and boundaries.",
+  "repo": {
+    "vcs": "git",
+    "rootHint": "Solid repository root"
+  },
+  "steps": [
+    {
+      "id": "why-split-effects-concept",
+      "title": "Concept: compute before apply",
+      "topicPath": ["1. Why Split Effects"],
+      "body": "# Solid 2.0: Split Effects\n\nThe old single callback mixed two jobs:\n\n- read reactive sources and discover dependencies\n- mutate the outside world\n\nSolid 2.0 separates them:\n\n```ts\ncreateEffect(\n  () => source(),\n  value => doSideEffect(value)\n)\n```\n\nThis lets the runtime discover all dependencies and pending async before any user side effect runs.",
+      "presentation": {
+        "kind": "single"
+      },
+      "anchors": []
+    },
+    {
+      "id": "why-split-effects-rfc-rationale",
+      "title": "RFC rationale",
+      "topicPath": ["1. Why Split Effects"],
+      "body": "The RFC frames split effects as part of a broader reactivity model: stricter writes, read warnings, batching, async, and boundaries.",
+      "primaryAnchorId": "rfc-motivation",
+      "presentation": {
+        "kind": "flow"
+      },
+      "anchors": [
+        {
+          "id": "rfc-motivation",
+          "kind": "fileRange",
+          "path": "documentation/solid-2.0/01-reactivity-batching-effects.md",
+          "range": {
+            "startLine": 5,
+            "endLine": 15
+          },
+          "note": "The RFC states the full motivation: stricter writes, top-level read warnings, microtask batching, and split effects for async and boundaries."
+        },
+        {
+          "id": "rfc-compute-then-effect",
+          "kind": "fileRange",
+          "path": "documentation/solid-2.0/01-reactivity-batching-effects.md",
+          "range": {
+            "startLine": 97,
+            "endLine": 109
+          },
+          "note": "This is the API-level reason: compute records dependencies; effect runs after all compute phases in the batch."
+        },
+        {
+          "id": "rfc-single-callback-rejected",
+          "kind": "fileRange",
+          "path": "documentation/solid-2.0/01-reactivity-batching-effects.md",
+          "range": {
+            "startLine": 273,
+            "endLine": 276
+          },
+          "note": "The single-callback default was explicitly rejected for async and boundary semantics."
+        }
+      ]
+    },
+    {
+      "id": "public-api-effect-types-wrapper",
+      "title": "Effect types and public wrapper",
+      "topicPath": ["2. Public API Surface"],
+      "body": "The public API exposes the split directly: compute returns a value, apply consumes it later.",
+      "primaryAnchorId": "signals-effect-types",
+      "presentation": {
+        "kind": "flow"
+      },
+      "anchors": [
+        {
+          "id": "signals-effect-types",
+          "kind": "fileRange",
+          "path": "packages/solid-signals/src/signals.ts",
+          "range": {
+            "startLine": 128,
+            "endLine": 138
+          },
+          "note": "ComputeFunction and EffectFunction encode the split: compute returns the value; effect consumes it and may return cleanup."
+        },
+        {
+          "id": "signals-create-effect-docs",
+          "kind": "fileRange",
+          "path": "packages/solid-signals/src/signals.ts",
+          "range": {
+            "startLine": 315,
+            "endLine": 330
+          },
+          "note": "The docs on the public createEffect API tell users where reactive reads and imperative writes belong."
+        },
+        {
+          "id": "signals-create-effect-wrapper",
+          "kind": "fileRange",
+          "path": "packages/solid-signals/src/signals.ts",
+          "range": {
+            "startLine": 365,
+            "endLine": 404
+          },
+          "note": "createEffect rejects the old single-argument form in dev and forwards compute/apply/error into the core effect primitive."
+        },
+        {
+          "id": "signals-create-render-effect",
+          "kind": "fileRange",
+          "path": "packages/solid-signals/src/signals.ts",
+          "range": {
+            "startLine": 435,
+            "endLine": 445
+          },
+          "note": "createRenderEffect uses the same split primitive but without user scheduling; it is for renderer-level synchronous work."
+        },
+        {
+          "id": "signals-create-tracked-effect",
+          "kind": "fileRange",
+          "path": "packages/solid-signals/src/signals.ts",
+          "range": {
+            "startLine": 477,
+            "endLine": 484
+          },
+          "note": "createTrackedEffect preserves the single-callback shape only as an explicit advanced escape hatch."
+        }
+      ]
+    },
+    {
+      "id": "internal-effect-node-lazy-computed",
+      "title": "effect() creates a lazy computed",
+      "topicPath": ["3. Internal Effect Node"],
+      "body": "Internally, an effect is represented as a computed node plus owner/effect-specific fields.",
+      "primaryAnchorId": "effect-interface",
+      "presentation": {
+        "kind": "flow"
+      },
+      "anchors": [
+        {
+          "id": "effect-interface",
+          "kind": "fileRange",
+          "path": "packages/solid-signals/src/core/effect.ts",
+          "range": {
+            "startLine": 18,
+            "endLine": 25
+          },
+          "note": "An Effect is both a Computed node and an Owner, with storage for apply callback, cleanup, previous value, and queue type."
+        },
+        {
+          "id": "effect-create-computed",
+          "kind": "fileRange",
+          "path": "packages/solid-signals/src/core/effect.ts",
+          "range": {
+            "startLine": 32,
+            "endLine": 48
+          },
+          "note": "effect() wraps the compute half in computed(..., { lazy: true }). Its equals hook marks the node modified and enqueues runEffect."
+        },
+        {
+          "id": "effect-store-callbacks",
+          "kind": "fileRange",
+          "path": "packages/solid-signals/src/core/effect.ts",
+          "range": {
+            "startLine": 49,
+            "endLine": 56
+          },
+          "note": "The apply/error callbacks and effect queue type are stored on the computed node."
+        },
+        {
+          "id": "effect-creation-run",
+          "kind": "fileRange",
+          "path": "packages/solid-signals/src/core/effect.ts",
+          "range": {
+            "startLine": 95,
+            "endLine": 101
+          },
+          "note": "Creation recomputes the compute phase immediately, then schedules or runs the apply phase unless defer is set."
+        },
+        {
+          "id": "effect-run-effect",
+          "kind": "fileRange",
+          "path": "packages/solid-signals/src/core/effect.ts",
+          "range": {
+            "startLine": 118,
+            "endLine": 142
+          },
+          "note": "runEffect is the apply half: cleanup old side effect, run _effectFn(value, prev), store returned cleanup, then commit prevValue."
+        }
+      ]
+    },
+    {
+      "id": "internal-effect-node-status-handling",
+      "title": "Status handling from effect nodes",
+      "topicPath": ["3. Internal Effect Node"],
+      "body": "Effect nodes participate in async/error propagation instead of treating pending async as an ordinary value.",
+      "primaryAnchorId": "effect-notify-status",
+      "presentation": {
+        "kind": "single"
+      },
+      "anchors": [
+        {
+          "id": "effect-notify-status",
+          "kind": "fileRange",
+          "path": "packages/solid-signals/src/core/effect.ts",
+          "range": {
+            "startLine": 55,
+            "endLine": 94
+          },
+          "note": "Effect nodes customize _notifyStatus so async pending/errors are either surfaced to user error handlers or propagated to boundary queues."
+        }
+      ]
+    },
+    {
+      "id": "compute-phase-recompute",
+      "title": "recompute() runs tracked compute",
+      "topicPath": ["4. Compute Phase"],
+      "body": "The compute phase runs under tracking context, captures dependencies, and converts pending async into status propagation.",
+      "primaryAnchorId": "core-recompute-context",
+      "presentation": {
+        "kind": "flow"
+      },
+      "anchors": [
+        {
+          "id": "core-recompute-context",
+          "kind": "fileRange",
+          "path": "packages/solid-signals/src/core/core.ts",
+          "range": {
+            "startLine": 143,
+            "endLine": 183
+          },
+          "note": "recompute sets context to the computed node and enables tracking before invoking the compute function."
+        },
+        {
+          "id": "core-recompute-handle-async",
+          "kind": "fileRange",
+          "path": "packages/solid-signals/src/core/core.ts",
+          "range": {
+            "startLine": 205,
+            "endLine": 219
+          },
+          "note": "The compute function runs here. Its result is routed through handleAsync unless the computation registered async internally."
+        },
+        {
+          "id": "core-recompute-not-ready",
+          "kind": "fileRange",
+          "path": "packages/solid-signals/src/core/core.ts",
+          "range": {
+            "startLine": 220,
+            "endLine": 239
+          },
+          "note": "NotReadyError marks the node pending and propagates status instead of treating pending async as a normal value."
+        },
+        {
+          "id": "core-recompute-dependency-reconcile",
+          "kind": "fileRange",
+          "path": "packages/solid-signals/src/core/core.ts",
+          "range": {
+            "startLine": 246,
+            "endLine": 282
+          },
+          "note": "After successful compute, dependencies are reconciled and changed values notify subscribers via insertSubs."
+        }
+      ]
+    },
+    {
+      "id": "compute-phase-effect-next-to-recompute",
+      "title": "Effect creation next to recompute",
+      "topicPath": ["4. Compute Phase"],
+      "body": "This cross-file step connects the effect primitive to the generic recomputation machinery.",
+      "primaryAnchorId": "effect-builds-computed-for-recompute",
+      "presentation": {
+        "kind": "flow"
+      },
+      "anchors": [
+        {
+          "id": "effect-builds-computed-for-recompute",
+          "kind": "fileRange",
+          "path": "packages/solid-signals/src/core/effect.ts",
+          "range": {
+            "startLine": 32,
+            "endLine": 48
+          },
+          "note": "effect() builds a computed node around the compute half."
+        },
+        {
+          "id": "core-recompute-invokes-effect-compute",
+          "kind": "fileRange",
+          "path": "packages/solid-signals/src/core/core.ts",
+          "range": {
+            "startLine": 205,
+            "endLine": 214
+          },
+          "note": "recompute invokes that compute half and hands its result to handleAsync."
+        }
+      ]
+    },
+    {
+      "id": "async-subpath-handle-async",
+      "title": "handleAsync detects pending work",
+      "topicPath": ["5. Async Subpath"],
+      "body": "Async values produced during compute are converted into suspension and later resumption.",
+      "primaryAnchorId": "async-handle-async-detect",
+      "presentation": {
+        "kind": "flow"
+      },
+      "anchors": [
+        {
+          "id": "async-handle-async-detect",
+          "kind": "fileRange",
+          "path": "packages/solid-signals/src/core/async.ts",
+          "range": {
+            "startLine": 131,
+            "endLine": 147
+          },
+          "note": "handleAsync accepts the compute result and detects Promise-like values or AsyncIterables. Synchronous values pass through."
+        },
+        {
+          "id": "async-promise-not-ready",
+          "kind": "fileRange",
+          "path": "packages/solid-signals/src/core/async.ts",
+          "range": {
+            "startLine": 200,
+            "endLine": 219
+          },
+          "note": "For unresolved Promises, Solid initializes a transition and throws NotReadyError from the compute path."
+        },
+        {
+          "id": "async-iterable-not-ready",
+          "kind": "fileRange",
+          "path": "packages/solid-signals/src/core/async.ts",
+          "range": {
+            "startLine": 221,
+            "endLine": 276
+          },
+          "note": "AsyncIterables follow the same model: if no synchronous value is available, throw NotReadyError and resume later."
+        }
+      ]
+    },
+    {
+      "id": "async-subpath-resolution-writes-back",
+      "title": "Async resolution writes back",
+      "topicPath": ["5. Async Subpath"],
+      "body": "Once async work resolves, Solid writes the result back into the graph and resumes blocked dependents.",
+      "primaryAnchorId": "async-write-resume-path",
+      "presentation": {
+        "kind": "flow"
+      },
+      "anchors": [
+        {
+          "id": "async-write-resume-path",
+          "kind": "fileRange",
+          "path": "packages/solid-signals/src/core/async.ts",
+          "range": {
+            "startLine": 149,
+            "endLine": 198
+          },
+          "note": "asyncWrite is the resume path. It ignores stale async results, commits the resolved value, settles pending sources, schedules and flushes."
+        },
+        {
+          "id": "async-settle-pending-source",
+          "kind": "fileRange",
+          "path": "packages/solid-signals/src/core/async.ts",
+          "range": {
+            "startLine": 92,
+            "endLine": 129
+          },
+          "note": "settlePendingSource walks dependents that were blocked by this async source and reschedules them."
+        },
+        {
+          "id": "async-notify-status",
+          "kind": "fileRange",
+          "path": "packages/solid-signals/src/core/async.ts",
+          "range": {
+            "startLine": 292,
+            "endLine": 362
+          },
+          "note": "notifyStatus propagates pending/error state through dependents and boundary queues."
+        }
+      ]
+    },
+    {
+      "id": "scheduler-microtask-scheduling",
+      "title": "Microtask scheduling",
+      "topicPath": ["6. Scheduler And Flush"],
+      "body": "Scheduling batches graph work so reads and effects observe the post-batch state.",
+      "primaryAnchorId": "scheduler-schedule",
+      "presentation": {
+        "kind": "flow"
+      },
+      "anchors": [
+        {
+          "id": "scheduler-schedule",
+          "kind": "fileRange",
+          "path": "packages/solid-signals/src/core/scheduler.ts",
+          "range": {
+            "startLine": 208,
+            "endLine": 212
+          },
+          "note": "schedule() batches work onto a microtask unless a flush is already running."
+        },
+        {
+          "id": "scheduler-flush-entry",
+          "kind": "fileRange",
+          "path": "packages/solid-signals/src/core/scheduler.ts",
+          "range": {
+            "startLine": 579,
+            "endLine": 595
+          },
+          "note": "flush() explicitly drains scheduled work and active transitions. This is why reads update after the batch, not immediately after setters."
+        }
+      ]
+    },
+    {
+      "id": "scheduler-flush-ordering",
+      "title": "Flush ordering",
+      "topicPath": ["6. Scheduler And Flush"],
+      "body": "The scheduler preserves the invariant that compute/finalization happens before render/user effects run.",
+      "primaryAnchorId": "scheduler-global-queue-flush",
+      "presentation": {
+        "kind": "flow"
+      },
+      "anchors": [
+        {
+          "id": "scheduler-global-queue-flush",
+          "kind": "fileRange",
+          "path": "packages/solid-signals/src/core/scheduler.ts",
+          "range": {
+            "startLine": 299,
+            "endLine": 366
+          },
+          "note": "GlobalQueue.flush runs pure recomputation first, finalizes pending nodes, then runs render effects and user effects."
+        },
+        {
+          "id": "scheduler-lane-effects-pending",
+          "kind": "fileRange",
+          "path": "packages/solid-signals/src/core/scheduler.ts",
+          "range": {
+            "startLine": 100,
+            "endLine": 110
+          },
+          "note": "Lane effects only run when their lane has no pending async. This is where async prevents premature apply callbacks."
+        },
+        {
+          "id": "scheduler-commit-pending-nodes",
+          "kind": "fileRange",
+          "path": "packages/solid-signals/src/core/scheduler.ts",
+          "range": {
+            "startLine": 474,
+            "endLine": 499
+          },
+          "note": "commitPendingNodes moves pending values into committed values and marks effect nodes modified before apply queues run."
+        }
+      ]
+    },
+    {
+      "id": "boundaries-queue-basics",
+      "title": "Boundary queue basics",
+      "topicPath": ["7. Boundaries"],
+      "body": "Boundaries contain pending/error status by running subtrees under specialized queues.",
+      "primaryAnchorId": "boundaries-boundary-computed",
+      "presentation": {
+        "kind": "flow"
+      },
+      "anchors": [
+        {
+          "id": "boundaries-boundary-computed",
+          "kind": "fileRange",
+          "path": "packages/solid-signals/src/boundaries.ts",
+          "range": {
+            "startLine": 36,
+            "endLine": 49
+          },
+          "note": "boundaryComputed creates computed nodes with custom status propagation masks."
+        },
+        {
+          "id": "boundaries-create-bound-children",
+          "kind": "fileRange",
+          "path": "packages/solid-signals/src/boundaries.ts",
+          "range": {
+            "startLine": 51,
+            "endLine": 64
+          },
+          "note": "createBoundChildren runs a subtree under a child queue so pending/error status can be contained by a boundary."
+        },
+        {
+          "id": "boundaries-collection-queue",
+          "kind": "fileRange",
+          "path": "packages/solid-signals/src/boundaries.ts",
+          "range": {
+            "startLine": 254,
+            "endLine": 260
+          },
+          "note": "CollectionQueue is the boundary queue type used to collect pending sources and coordinate reveal/loading state."
+        }
+      ]
+    },
+    {
+      "id": "boundaries-public-loading-component",
+      "title": "Public Loading component",
+      "topicPath": ["7. Boundaries"],
+      "body": "The public component API exposes async pending as a structural boundary concept.",
+      "primaryAnchorId": "flow-loading-component",
+      "presentation": {
+        "kind": "single"
+      },
+      "anchors": [
+        {
+          "id": "flow-loading-component",
+          "kind": "fileRange",
+          "path": "packages/solid/src/client/flow.ts",
+          "range": {
+            "startLine": 284,
+            "endLine": 331
+          },
+          "note": "<Loading> is a thin component wrapper over createLoadingBoundary. Async pending is structural, not a resource.loading flag."
+        }
+      ]
+    },
+    {
+      "id": "boundaries-hydration-aware-loading-boundary",
+      "title": "Hydration-aware createLoadingBoundary",
+      "topicPath": ["7. Boundaries"],
+      "body": "Hydration can resume or force fallback state before normal boundary behavior takes over.",
+      "primaryAnchorId": "hydration-loading-boundary-delegate",
+      "presentation": {
+        "kind": "flow"
+      },
+      "anchors": [
+        {
+          "id": "hydration-loading-boundary-delegate",
+          "kind": "fileRange",
+          "path": "packages/solid/src/client/hydration.ts",
+          "range": {
+            "startLine": 1328,
+            "endLine": 1334
+          },
+          "note": "On the client, createLoadingBoundary delegates to the core boundary unless hydration-specific serialized state must be resumed."
+        },
+        {
+          "id": "hydration-loading-boundary-serialized-state",
+          "kind": "fileRange",
+          "path": "packages/solid/src/client/hydration.ts",
+          "range": {
+            "startLine": 1348,
+            "endLine": 1383
+          },
+          "note": "During hydration, serialized boundary state can force fallback until streamed or asset-backed async work resumes."
+        }
+      ]
+    },
+    {
+      "id": "end-to-end-call-path-summary",
+      "title": "Call path summary",
+      "topicPath": ["8. End-To-End Flow"],
+      "body": "# End-To-End Path\n\n1. User calls `createEffect(compute, apply)`.\n2. `signals.ts` forwards both functions to `effect()`.\n3. `effect.ts` creates a lazy `computed` node for the compute phase.\n4. `recompute()` sets tracking context and runs `compute(prev)`.\n5. If compute returns a Promise or AsyncIterable, `handleAsync()` throws `NotReadyError` while registering pending work.\n6. `notifyStatus()` propagates pending to dependents and boundaries.\n7. `Loading`/boundary queues hold apply work while pending async exists.\n8. When async resolves, `asyncWrite()` commits/reschedules and flushes.\n9. Scheduler finalizes computed values, then runs `runEffect()`.\n10. `runEffect()` executes `apply(value, prev)` untracked and stores cleanup.\n\nThe important invariant: side effects run after the graph has established dependencies and async readiness.",
+      "presentation": {
+        "kind": "single"
+      },
+      "anchors": []
+    },
+    {
+      "id": "end-to-end-main-files-together",
+      "title": "Main implementation files together",
+      "topicPath": ["8. End-To-End Flow"],
+      "body": "The core implementation path crosses effect construction, async detection/suspension, and eventual application of the side effect.",
+      "primaryAnchorId": "e2e-effect-create-node",
+      "presentation": {
+        "kind": "flow"
+      },
+      "anchors": [
+        {
+          "id": "e2e-effect-create-node",
+          "kind": "fileRange",
+          "path": "packages/solid-signals/src/core/effect.ts",
+          "range": {
+            "startLine": 32,
+            "endLine": 48
+          },
+          "note": "Create effect node."
+        },
+        {
+          "id": "e2e-effect-apply-side-effect",
+          "kind": "fileRange",
+          "path": "packages/solid-signals/src/core/effect.ts",
+          "range": {
+            "startLine": 118,
+            "endLine": 142
+          },
+          "note": "Apply side effect."
+        },
+        {
+          "id": "e2e-async-detect",
+          "kind": "fileRange",
+          "path": "packages/solid-signals/src/core/async.ts",
+          "range": {
+            "startLine": 131,
+            "endLine": 147
+          },
+          "note": "Detect async."
+        },
+        {
+          "id": "e2e-async-suspend-not-ready",
+          "kind": "fileRange",
+          "path": "packages/solid-signals/src/core/async.ts",
+          "range": {
+            "startLine": 200,
+            "endLine": 219
+          },
+          "note": "Suspend with NotReadyError."
+        }
+      ]
+    }
+  ]
+}

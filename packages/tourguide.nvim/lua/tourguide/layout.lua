@@ -54,9 +54,9 @@ local function with_flow_numbers(sections, start_index)
   return numbered, n
 end
 
-local function render_file(root, file, sections)
+local function render_file(root, file, sections, focus_section)
   local buf, win = open_file(root, file)
-  local first = annotations.apply(buf, sections)
+  local first = annotations.apply(buf, sections, nil, focus_section)
   if first then
     vim.api.nvim_win_set_cursor(win, { first, 0 })
     vim.cmd("normal! zz")
@@ -112,13 +112,15 @@ function M.render(step, tour, previous_windows)
         vim.cmd(layout == "horizontal" and "split" or "vsplit")
         enforce_sidebar_width()
       end
-      local sections = pane.sections
-      if flow_index then sections, flow_index = with_flow_numbers(pane.sections, flow_index) end
-      local _, win = render_file(root, pane.file, sections)
+      local source_pane = step._all_panes and step._all_panes[i] or pane
+      local sections = source_pane.sections
+      local focus_section = step._focus_pane == i and step._focus_section or nil
+      if flow_index then sections, flow_index = with_flow_numbers(source_pane.sections, flow_index) end
+      local _, win = render_file(root, pane.file, sections, focus_section)
       table.insert(windows, win)
     end
   elseif step.file then
-    local _, win = render_file(root, step.file, step.sections)
+    local _, win = render_file(root, step.file, step._all_sections or step.sections, step._focus_section)
     table.insert(windows, win)
   end
 

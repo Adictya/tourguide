@@ -1,0 +1,9 @@
+{
+  "name": "tourguide.nvim",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Legacy Neovim renderer for TourGuide Lua tours.",
+  "scripts": {
+    "bundle": "lua scripts/bundle.lua"
+  }
+}

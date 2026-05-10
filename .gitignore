@@ -2,3 +2,7 @@
 *.swp
 *.swo
 .luarc.json
+node_modules/
+dist/
+coverage/
+.tourguide/tours/

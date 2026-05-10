@@ -1,0 +1,36 @@
+{
+  "name": "@tourguide/tui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "dev": "bun run ./src/index.tsx",
+    "dev:watch": "bun --watch run ./src/index.tsx",
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@opentui/solid": "^0.2.6",
+    "@tourguide/core": "workspace:*",
+    "solid-js": "^1.9.12"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "typescript": "latest",
+    "vitest": "latest"
+  },
+  "peerDependencies": {
+    "@opentui/core": "^0.2.6"
+  },
+  "peerDependenciesMeta": {
+    "@opentui/core": {
+      "optional": true
+    }
+  }
+}

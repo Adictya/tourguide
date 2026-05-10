@@ -7,12 +7,14 @@ M.index = 0
 M.sidebar = { buf = nil, win = nil, width = 34 }
 M.windows = {}
 M.options = { prompt_keymaps = true }
+M.dim_buffers = {}
 
 function M.reset()
   M.tour = nil
   M.steps = {}
   M.index = 0
   M.windows = {}
+  M.dim_buffers = {}
   if M.sidebar.win and vim.api.nvim_win_is_valid(M.sidebar.win) then
     pcall(vim.api.nvim_win_close, M.sidebar.win, true)
   end

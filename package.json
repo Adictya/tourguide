@@ -1,0 +1,21 @@
+{
+  "name": "tourguide",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.3.13",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "bun run --cwd packages/schema build && bun run --cwd packages/core build && bun run --cwd packages/tui build && bun run --cwd packages/cli build",
+    "test": "bun run --cwd packages/schema test && bun run --cwd packages/core test",
+    "tourguide": "bun run packages/cli/src/index.ts",
+    "validate:fixture": "bun run tourguide validate packages/schema/fixtures/solid-effects-short.tour.json"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "typescript": "latest",
+    "vitest": "latest"
+  }
+}
