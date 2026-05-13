@@ -3,14 +3,15 @@ import {
   RGBA,
   ScrollBoxRenderable,
   SyntaxStyle,
-  Timeline,
 } from "@opentui/core";
 import {
   render,
   useKeyboard,
+  useTimeline,
   useTerminalDimensions,
 } from "@opentui/solid";
-import { createEffect, createSignal } from "solid-js";
+import { create } from "node:domain";
+import { createEffect, createSignal, untrack } from "solid-js";
 
 const something = {
   topLeft: "a",
@@ -36,6 +37,8 @@ const syntaxStyle = SyntaxStyle.fromStyles({
 
 const something2 = { ...something, bottomRight: "┤" };
 const something3 = { ...something, topRight: "┤" };
+const activeSectionColor = "#fff";
+const inactiveSectionColor = "#aaa";
 
 type Tour = {
   heading: string;
@@ -45,6 +48,9 @@ type Tour = {
     sections: string[];
   }>;
 };
+
+const getTotalSections = (tour: Tour) =>
+  tour.topics.reduce((count, topic) => count + topic.sections.length, 0);
 
 const tour: Tour = {
   heading: "INTRODUCTION TO EFFECT",
@@ -70,8 +76,9 @@ const tour: Tour = {
   ],
 };
 
+const totalSections = getTotalSections(tour);
+
 type DottedBoxProps = {
-  width: number;
   height: number;
 };
 
@@ -81,17 +88,26 @@ const getDottedRow = (width: number) =>
   ).join("");
 
 const DottedBox = (props: DottedBoxProps) => {
-  const row = () => getDottedRow(props.width);
+  let selfRef!: BoxRenderable;
+  const [w, setW] = createSignal(0);
 
   return (
     <box
-      width={props.width}
+      ref={(ref) => {
+        selfRef = ref;
+      }}
+      width={"100%"}
       border={["bottom", "right"]}
       customBorderChars={something2}
       borderColor={"#555"}
+      onSizeChange={() => {
+        setW(selfRef.width);
+      }}
     >
       {Array.from({ length: props.height }, () => (
-        <text fg={"#282828"}>{row()}</text>
+        <text wrapMode="none" fg={"#282828"}>
+          {getDottedRow(w())}
+        </text>
       ))}
     </box>
   );
@@ -99,20 +115,36 @@ const DottedBox = (props: DottedBoxProps) => {
 
 const SectionBox = (props: {
   children: string;
-  active: boolean;
+  selected: boolean;
   refCapture: (ref: BoxRenderable) => void;
-}) => (
-  <box
-    ref={props.refCapture}
-    border={["bottom", "right"]}
-    customBorderChars={something2}
-    borderColor={"#555"}
-    paddingX={4}
-    paddingY={1}
-  >
-    <text fg={props.active ? "#fff" : "#888"}>{props.children}</text>
-  </box>
-);
+}) => {
+  const [hover, setHovered] = createSignal(false);
+
+  return (
+    <box
+      ref={props.refCapture}
+      border={["bottom", "right"]}
+      customBorderChars={something2}
+      borderColor={"#555"}
+      paddingX={4}
+      paddingY={1}
+      onMouseOut={() => {
+        setHovered(false);
+      }}
+      onMouseOver={() => {
+        setHovered(true);
+      }}
+    >
+      <text
+        fg={
+          props.selected || hover() ? activeSectionColor : inactiveSectionColor
+        }
+      >
+        {props.children}
+      </text>
+    </box>
+  );
+};
 
 const TopicTitleBox = (props: { children: string }) => (
   <box
@@ -125,36 +157,101 @@ const TopicTitleBox = (props: { children: string }) => (
   </box>
 );
 
+const ANIM_DUR = 200;
+
 const App = () => {
   const [activeSection, setActiveSectio] = createSignal(0);
   const [scrollPos, setScrollPos] = createSignal(0);
+  const [sectionColorValues, setSectionColorValues] = createSignal(
+    Array.from({ length: totalSections }, (_, index) =>
+      index === 0 ? activeSectionColor : inactiveSectionColor,
+    ),
+  );
   const termDems = useTerminalDimensions();
+  const scrollTimeline = useTimeline({ duration: ANIM_DUR, autoplay: false });
 
   const ref: BoxRenderable[] = [];
+  let previousActiveSection = activeSection();
 
   let scrollRef!: ScrollBoxRenderable;
 
   useKeyboard((key) => {
     if (key.name === "j") {
-      setActiveSectio(activeSection() + 1);
+      let cur = activeSection();
+      if (cur < getTotalSections(tour) - 1) {
+        setActiveSectio(cur + 1);
+      }
     }
     if (key.name === "k") {
-      setActiveSectio(activeSection() - 1);
+      let cur = activeSection();
+      if (cur > 0) {
+        setActiveSectio(cur - 1);
+      }
     }
   });
 
   createEffect(() => {
-    const cur = ref[activeSection()];
+    const currentSection = activeSection();
+    const previousSection = previousActiveSection;
+    const cur = ref[currentSection];
     if (!cur) return;
 
     const yInScrollContent = cur.screenY - scrollRef.content.screenY;
-    const target =
+    const target = Math.max(
+      0,
       yInScrollContent +
-      Math.floor(cur.height / 2) -
-      Math.floor(scrollRef.viewport.height / 2) -
-      1;
-    scrollRef.scrollTo(target);
-    setScrollPos(target);
+        Math.floor(cur.height / 2) -
+        Math.floor(scrollRef.viewport.height / 2) -
+        1,
+    );
+
+    scrollTimeline.pause();
+    scrollTimeline.items = [];
+    scrollTimeline.currentTime = 0;
+    scrollTimeline.isComplete = false;
+
+    scrollTimeline.once(
+      {
+        y: untrack(scrollPos),
+        previousColor:
+          untrack(sectionColorValues)[previousSection] ?? inactiveSectionColor,
+        activeColor:
+          untrack(sectionColorValues)[currentSection] ?? activeSectionColor,
+      },
+      {
+        y: target,
+        previousColor: inactiveSectionColor,
+        activeColor: activeSectionColor,
+        duration: ANIM_DUR,
+        ease: "outQuad",
+        onUpdate(values) {
+          const nextValues = values.targets[0];
+          const next = Math.round(nextValues.y);
+          scrollRef.scrollTo(next);
+          setScrollPos(next);
+          setSectionColorValues((colors) =>
+            colors.map((color, index) => {
+              if (index === previousSection) return nextValues.previousColor;
+              if (index === currentSection) return nextValues.activeColor;
+              return color;
+            }),
+          );
+        },
+        onComplete() {
+          scrollRef.scrollTo(target);
+          setScrollPos(target);
+          setSectionColorValues((colors) =>
+            colors.map((color, index) => {
+              if (index === previousSection) return inactiveSectionColor;
+              if (index === currentSection) return activeSectionColor;
+              return color;
+            }),
+          );
+        },
+      },
+    );
+    previousActiveSection = currentSection;
+    scrollTimeline.play();
   });
 
   return (
@@ -178,13 +275,13 @@ const App = () => {
           }}
           maxHeight={termDems().height - 4}
         >
-          <DottedBox width={60} height={27} />
+          <DottedBox height={27} />
           {tour.topics.map((topic, topicIndex) => (
             <>
               <TopicTitleBox>{topic.title}</TopicTitleBox>
               {topic.sections.map((section, index) => (
                 <SectionBox
-                  active={activeSection() === topic.prevSections + index}
+                  selected={topic.prevSections + index === activeSection()}
                   refCapture={(sectionRef) => {
                     ref[topic.prevSections + index] = sectionRef;
                   }}
@@ -194,7 +291,7 @@ const App = () => {
               ))}
             </>
           ))}
-          <DottedBox width={60} height={30} />
+          <DottedBox height={30} />
         </scrollbox>
         <box
           border={["top", "right"]}
@@ -202,7 +299,9 @@ const App = () => {
           borderColor={"#555"}
           paddingX={4}
         >
-          <text>0/14</text>
+          <text>
+            {activeSection() + 1}/{getTotalSections(tour)}
+          </text>
         </box>
       </box>
       <box flexGrow={0.6} maxWidth={"60%"}>
@@ -213,10 +312,10 @@ const App = () => {
           <code
             syntaxStyle={syntaxStyle}
             filetype="typescript"
-            content={`async function checkout ( cartId : string) : Promise < Order > {
-  const cart = await getCart (cartId);
-  const payment = await charge (cart);
-  const shipment = await ship (payment);
+            content={`async function checkout(cartId: string): Promise<Order> {
+  const cart = await getCart(cartId);
+  const payment = await charge(cart);
+  const shipment = await ship(payment);
   return shipment
 }
 `}
