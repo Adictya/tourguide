@@ -11,7 +11,7 @@ import {
   useTerminalDimensions,
 } from "@opentui/solid";
 import { create } from "node:domain";
-import { createEffect, createSignal, untrack } from "solid-js";
+import { createEffect, createSignal, Show, untrack } from "solid-js";
 
 const something = {
   topLeft: "a",
@@ -117,6 +117,7 @@ const SectionBox = (props: {
   children: string;
   selected: boolean;
   refCapture: (ref: BoxRenderable) => void;
+  onClick?: () => void;
 }) => {
   const [hover, setHovered] = createSignal(false);
 
@@ -134,6 +135,7 @@ const SectionBox = (props: {
       onMouseOver={() => {
         setHovered(true);
       }}
+      onMouseUp={() => props.onClick?.()}
     >
       <text
         fg={
@@ -162,6 +164,8 @@ const ANIM_DUR = 200;
 const App = () => {
   const [activeSection, setActiveSectio] = createSignal(0);
   const [scrollPos, setScrollPos] = createSignal(0);
+  const [debug, setDebug] = createSignal("");
+  const [collapsed, setCollapsed] = createSignal(true);
   const [sectionColorValues, setSectionColorValues] = createSignal(
     Array.from({ length: totalSections }, (_, index) =>
       index === 0 ? activeSectionColor : inactiveSectionColor,
@@ -176,6 +180,13 @@ const App = () => {
   let scrollRef!: ScrollBoxRenderable;
 
   useKeyboard((key) => {
+    if (key.name === "=") {
+      setCollapsed(!collapsed());
+      let cur = activeSection();
+      if (cur < getTotalSections(tour) - 1) {
+        setActiveSectio(cur + 1);
+      }
+    }
     if (key.name === "j") {
       let cur = activeSection();
       if (cur < getTotalSections(tour) - 1) {
@@ -276,21 +287,26 @@ const App = () => {
           maxHeight={termDems().height - 4}
         >
           <DottedBox height={27} />
-          {tour.topics.map((topic, topicIndex) => (
-            <>
-              <TopicTitleBox>{topic.title}</TopicTitleBox>
-              {topic.sections.map((section, index) => (
-                <SectionBox
-                  selected={topic.prevSections + index === activeSection()}
-                  refCapture={(sectionRef) => {
-                    ref[topic.prevSections + index] = sectionRef;
-                  }}
-                >
-                  {section}
-                </SectionBox>
-              ))}
-            </>
-          ))}
+          <Show when={collapsed()}>
+            {tour.topics.map((topic, topicIndex) => (
+              <>
+                <TopicTitleBox>{topic.title}</TopicTitleBox>
+                {topic.sections.map((section, index) => (
+                  <SectionBox
+                    selected={topic.prevSections + index === activeSection()}
+                    onClick={() => {
+                      setActiveSectio(topic.prevSections + index);
+                    }}
+                    refCapture={(sectionRef) => {
+                      ref[topic.prevSections + index] = sectionRef;
+                    }}
+                  >
+                    {section}
+                  </SectionBox>
+                ))}
+              </>
+            ))}
+          </Show>
           <DottedBox height={30} />
         </scrollbox>
         <box
@@ -300,7 +316,7 @@ const App = () => {
           paddingX={4}
         >
           <text>
-            {activeSection() + 1}/{getTotalSections(tour)}
+            {activeSection() + 1}/{getTotalSections(tour)} {debug()}
           </text>
         </box>
       </box>
