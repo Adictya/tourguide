@@ -16,7 +16,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@opentui/solid": "^0.2.6",
+    "@opentui/solid": "^0.2.15",
     "@tourguide/core": "workspace:*",
     "solid-js": "^1.9.12"
   },
@@ -26,7 +26,7 @@
     "vitest": "latest"
   },
   "peerDependencies": {
-    "@opentui/core": "^0.2.6"
+    "@opentui/core": "^0.2.15"
   },
   "peerDependenciesMeta": {
     "@opentui/core": {

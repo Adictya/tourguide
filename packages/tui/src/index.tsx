@@ -1,15 +1,5 @@
-import {
-  BoxRenderable,
-  RGBA,
-  ScrollBoxRenderable,
-  SyntaxStyle,
-} from "@opentui/core";
-import {
-  render,
-  useKeyboard,
-  useTimeline,
-  useTerminalDimensions,
-} from "@opentui/solid";
+import { BoxRenderable, RGBA, ScrollBoxRenderable, SyntaxStyle } from "@opentui/core";
+import { render, useKeyboard, useTimeline, useTerminalDimensions } from "@opentui/solid";
 import { create } from "node:domain";
 import { createEffect, createSignal, Show, untrack } from "solid-js";
 
@@ -83,9 +73,7 @@ type DottedBoxProps = {
 };
 
 const getDottedRow = (width: number) =>
-  Array.from({ length: width - 1 }, (_, index) =>
-    index % 2 === 0 ? "·" : " ",
-  ).join("");
+  Array.from({ length: width - 1 }, (_, index) => (index % 2 === 0 ? "·" : " ")).join("");
 
 const DottedBox = (props: DottedBoxProps) => {
   let selfRef!: BoxRenderable;
@@ -137,11 +125,7 @@ const SectionBox = (props: {
       }}
       onMouseUp={() => props.onClick?.()}
     >
-      <text
-        fg={
-          props.selected || hover() ? activeSectionColor : inactiveSectionColor
-        }
-      >
+      <text fg={props.selected || hover() ? activeSectionColor : inactiveSectionColor}>
         {props.children}
       </text>
     </box>
@@ -210,10 +194,7 @@ const App = () => {
     const yInScrollContent = cur.screenY - scrollRef.content.screenY;
     const target = Math.max(
       0,
-      yInScrollContent +
-        Math.floor(cur.height / 2) -
-        Math.floor(scrollRef.viewport.height / 2) -
-        1,
+      yInScrollContent + Math.floor(cur.height / 2) - Math.floor(scrollRef.viewport.height / 2) - 1,
     );
 
     scrollTimeline.pause();
@@ -224,10 +205,8 @@ const App = () => {
     scrollTimeline.once(
       {
         y: untrack(scrollPos),
-        previousColor:
-          untrack(sectionColorValues)[previousSection] ?? inactiveSectionColor,
-        activeColor:
-          untrack(sectionColorValues)[currentSection] ?? activeSectionColor,
+        previousColor: untrack(sectionColorValues)[previousSection] ?? inactiveSectionColor,
+        activeColor: untrack(sectionColorValues)[currentSection] ?? activeSectionColor,
       },
       {
         y: target,
@@ -287,10 +266,10 @@ const App = () => {
           maxHeight={termDems().height - 4}
         >
           <DottedBox height={27} />
-          <Show when={collapsed()}>
-            {tour.topics.map((topic, topicIndex) => (
-              <>
-                <TopicTitleBox>{topic.title}</TopicTitleBox>
+          {tour.topics.map((topic, topicIndex) => (
+            <>
+              <TopicTitleBox>{topic.title}</TopicTitleBox>
+              <Show when={collapsed()}>
                 {topic.sections.map((section, index) => (
                   <SectionBox
                     selected={topic.prevSections + index === activeSection()}
@@ -304,9 +283,9 @@ const App = () => {
                     {section}
                   </SectionBox>
                 ))}
-              </>
-            ))}
-          </Show>
+              </Show>
+            </>
+          ))}
           <DottedBox height={30} />
         </scrollbox>
         <box
