@@ -3,6 +3,7 @@ export type Tour = {
   id: string;
   title: string;
   intent?: string;
+  description?: string;
   createdAt?: string;
   generator?: GeneratorInfo;
   repo?: RepoInfo;

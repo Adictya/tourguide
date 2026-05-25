@@ -5,6 +5,7 @@ export type NormalizedTour = {
   id: string;
   title: string;
   intent?: string;
+  description?: string;
   createdAt?: string;
   generator?: Tour["generator"];
   repo?: RepoInfo;
@@ -44,6 +45,7 @@ export type StepContext = {
     id: string;
     title: string;
     intent?: string;
+    description?: string;
   };
   step: NormalizedStep;
   progress: {

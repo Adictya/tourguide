@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "schema-package",
+  "title": "Schema Package Overview",
+  "intent": "A short dummy tour of the schema package using its package.json.",
+  "description": "Shows the schema package as the strict JSON contract and AJV validation layer.",
+  "repo": {
+    "vcs": "git",
+    "rootHint": "TourGuide repository root"
+  },
+  "topics": [
+    {
+      "title": "1. Package",
+      "steps": [
+        {
+          "title": "Schema package metadata",
+          "body": "`@tourguide/schema` owns the TourGuide JSON contract and validation dependency.",
+          "presentation": {
+            "kind": "single"
+          },
+          "anchors": [
+            {
+              "kind": "fileRange",
+              "path": "packages/schema/package.json",
+              "range": {
+                "startLine": 1,
+                "endLine": 24
+              },
+              "note": "The package exposes built output and depends on AJV for JSON schema validation."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

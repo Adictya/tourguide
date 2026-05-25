@@ -10,6 +10,7 @@ export const tourSchema = {
     id: { type: "string", minLength: 1 },
     title: { type: "string", minLength: 1 },
     intent: { type: "string" },
+    description: { type: "string" },
     createdAt: { type: "string" },
     generator: { $ref: "#/$defs/generator" },
     repo: { $ref: "#/$defs/repo" },

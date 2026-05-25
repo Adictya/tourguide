@@ -56,6 +56,7 @@ export function normalizeTour(tour: Tour): NormalizedTour {
     topics,
     steps,
     ...(tour.intent !== undefined ? { intent: tour.intent } : {}),
+    ...(tour.description !== undefined ? { description: tour.description } : {}),
     ...(tour.createdAt !== undefined ? { createdAt: tour.createdAt } : {}),
     ...(tour.generator !== undefined ? { generator: tour.generator } : {}),
     ...(tour.repo !== undefined ? { repo: tour.repo } : {})
@@ -70,7 +71,8 @@ export function selectStepContext(tour: NormalizedTour, stepId?: string): StepCo
     tour: {
       id: tour.id,
       title: tour.title,
-      ...(tour.intent !== undefined ? { intent: tour.intent } : {})
+      ...(tour.intent !== undefined ? { intent: tour.intent } : {}),
+      ...(tour.description !== undefined ? { description: tour.description } : {})
     },
     step,
     progress: {

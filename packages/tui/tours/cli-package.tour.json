@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "cli-package",
+  "title": "CLI Package Overview",
+  "intent": "A short dummy tour of the CLI package using its package.json.",
+  "description": "Shows how the CLI package composes schema, core, and TUI into the command-line surface.",
+  "repo": {
+    "vcs": "git",
+    "rootHint": "TourGuide repository root"
+  },
+  "topics": [
+    {
+      "title": "1. Package",
+      "steps": [
+        {
+          "title": "CLI package metadata",
+          "body": "`@tourguide/cli` is the command layer that depends on schema, core, and TUI.",
+          "presentation": {
+            "kind": "single"
+          },
+          "anchors": [
+            {
+              "kind": "fileRange",
+              "path": "packages/cli/package.json",
+              "range": {
+                "startLine": 1,
+                "endLine": 30
+              },
+              "note": "The dependency list makes the CLI the composition point for validation, normalization, and rendering."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
