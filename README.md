@@ -13,7 +13,7 @@ The canonical artifact is a strict JSON Tour. A Tour organizes one explanation i
 
 ## Packages
 
-- `packages/schema` owns schema validation scaffolding. It is expected to be replaced by the v1 contract and Effect Schema implementation.
+- `packages/schema` owns the v1 Tour contract and Effect Schema validation/parsing helpers.
 - `packages/core` owns normalization/session-model scaffolding. It is expected to be rewritten around Topics, Flows, Steps, Detail Levels, and single Anchors.
 - `packages/tui` contains the terminal visual direction. The UI vibe is retained; its current data model is not authoritative.
 - `packages/cli` provides the `tourguide` command surface and should grow validation, hydration, strip, and view workflows from the v1 contract.

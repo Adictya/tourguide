@@ -1,229 +1,200 @@
-export const tourSchema = {
-  $schema: "http://json-schema.org/draft-07/schema#",
-  $id: "https://tourguide.dev/schemas/tour.schema.json",
-  title: "TourGuide Tour",
-  type: "object",
-  additionalProperties: false,
-  required: ["schemaVersion", "id", "title", "topics"],
-  properties: {
-    schemaVersion: { const: 1 },
-    id: { type: "string", minLength: 1 },
-    title: { type: "string", minLength: 1 },
-    intent: { type: "string" },
-    description: { type: "string" },
-    createdAt: { type: "string" },
-    generator: { $ref: "#/$defs/generator" },
-    repo: { $ref: "#/$defs/repo" },
-    topics: {
-      type: "array",
-      minItems: 1,
-      items: { $ref: "#/$defs/topic" }
-    }
-  },
-  $defs: {
-    generator: {
-      type: "object",
-      additionalProperties: false,
-      required: ["name"],
-      properties: {
-        name: { type: "string", minLength: 1 },
-        version: { type: "string" },
-        model: { type: "string" }
-      }
-    },
-    repo: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        vcs: { const: "git" },
-        rootHint: { type: "string" },
-        remoteUrl: { type: "string" },
-        commit: { type: "string" },
-        baseRef: { type: "string" },
-        headRef: { type: "string" }
-      }
-    },
-    topic: {
-      type: "object",
-      additionalProperties: false,
-      required: ["title", "steps"],
-      properties: {
-        id: { type: "string", minLength: 1 },
-        title: { type: "string", minLength: 1 },
-        body: { type: "string" },
-        steps: {
-          type: "array",
-          minItems: 1,
-          items: { $ref: "#/$defs/step" }
-        }
-      }
-    },
-    step: {
-      type: "object",
-      additionalProperties: false,
-      required: ["title"],
-      properties: {
-        id: { type: "string", minLength: 1 },
-        title: { type: "string", minLength: 1 },
-        body: { type: "string" },
-        primaryAnchorId: { type: "string", minLength: 1 },
-        presentation: { $ref: "#/$defs/presentation" },
-        anchors: {
-          type: "array",
-          items: { $ref: "#/$defs/anchor" }
-        }
-      }
-    },
-    presentation: {
-      type: "object",
-      additionalProperties: false,
-      required: ["kind"],
-      properties: {
-        kind: { enum: ["single", "flow", "compare", "diff"] },
-        preferredDiffView: { enum: ["unified", "sideBySide"] }
-      }
-    },
-    anchor: {
-      oneOf: [
-        { $ref: "#/$defs/fileRangeAnchor" },
-        { $ref: "#/$defs/diffHunkAnchor" },
-        { $ref: "#/$defs/embeddedExcerptAnchor" }
-      ]
-    },
-    anchorBase: {
-      type: "object",
-      properties: {
-        id: { type: "string", minLength: 1 },
-        note: { type: "string" },
-        role: { enum: ["primary", "context", "before", "after"] }
-      }
-    },
-    fileRangeAnchor: {
-      allOf: [
-        { $ref: "#/$defs/anchorBase" },
-        {
-          type: "object",
-          additionalProperties: false,
-          required: ["kind", "path", "range"],
-          properties: {
-            id: { type: "string", minLength: 1 },
-            note: { type: "string" },
-            role: { enum: ["primary", "context", "before", "after"] },
-            kind: { const: "fileRange" },
-            path: { type: "string", minLength: 1 },
-            range: { $ref: "#/$defs/sourceRange" },
-            locator: { $ref: "#/$defs/locator" },
-            integrity: { $ref: "#/$defs/integrity" },
-            snapshot: { $ref: "#/$defs/snapshot" }
-          }
-        }
-      ]
-    },
-    diffHunkAnchor: {
-      allOf: [
-        { $ref: "#/$defs/anchorBase" },
-        {
-          type: "object",
-          additionalProperties: false,
-          required: ["kind", "path", "status", "hunk"],
-          properties: {
-            id: { type: "string", minLength: 1 },
-            note: { type: "string" },
-            role: { enum: ["primary", "context", "before", "after"] },
-            kind: { const: "diffHunk" },
-            path: { type: "string", minLength: 1 },
-            oldPath: { type: "string", minLength: 1 },
-            status: { enum: ["added", "modified", "deleted", "renamed"] },
-            hunk: { $ref: "#/$defs/diffHunk" },
-            focus: { $ref: "#/$defs/diffFocus" }
-          }
-        }
-      ]
-    },
-    embeddedExcerptAnchor: {
-      allOf: [
-        { $ref: "#/$defs/anchorBase" },
-        {
-          type: "object",
-          additionalProperties: false,
-          required: ["kind", "content"],
-          properties: {
-            id: { type: "string", minLength: 1 },
-            note: { type: "string" },
-            role: { enum: ["primary", "context", "before", "after"] },
-            kind: { const: "embeddedExcerpt" },
-            path: { type: "string", minLength: 1 },
-            language: { type: "string" },
-            startLine: { type: "integer", minimum: 1 },
-            content: { type: "string" },
-            contentHash: { type: "string" }
-          }
-        }
-      ]
-    },
-    sourceRange: {
-      type: "object",
-      additionalProperties: false,
-      required: ["startLine", "endLine"],
-      properties: {
-        startLine: { type: "integer", minimum: 1 },
-        endLine: { type: "integer", minimum: 1 },
-        startColumn: { type: "integer", minimum: 1 },
-        endColumn: { type: "integer", minimum: 1 }
-      }
-    },
-    locator: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        search: { type: "string" },
-        symbol: { type: "string" }
-      }
-    },
-    integrity: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        excerptHash: { type: "string" },
-        hashAlgorithm: { const: "sha256" }
-      }
-    },
-    snapshot: {
-      type: "object",
-      additionalProperties: false,
-      required: ["startLine", "content"],
-      properties: {
-        language: { type: "string" },
-        startLine: { type: "integer", minimum: 1 },
-        content: { type: "string" }
-      }
-    },
-    diffHunk: {
-      type: "object",
-      additionalProperties: false,
-      required: ["header", "patch"],
-      properties: {
-        header: { type: "string", minLength: 1 },
-        oldStart: { type: "integer", minimum: 0 },
-        oldLines: { type: "integer", minimum: 0 },
-        newStart: { type: "integer", minimum: 0 },
-        newLines: { type: "integer", minimum: 0 },
-        patch: { type: "string" }
-      }
-    },
-    diffFocus: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        oldLines: {
-          type: "array",
-          items: { type: "integer", minimum: 1 }
-        },
-        newLines: {
-          type: "array",
-          items: { type: "integer", minimum: 1 }
-        }
-      }
-    }
-  }
-} as const;
+import * as Schema from "@effect/schema/Schema";
+
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const isoDateTimePattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/;
+const gitSha1Pattern = /^[0-9a-f]{40}$/i;
+const sha256Pattern = /^[0-9a-f]{64}$/i;
+
+export const languageIds = [
+  "bash",
+  "css",
+  "diff",
+  "html",
+  "javascript",
+  "json",
+  "jsonc",
+  "jsx",
+  "lua",
+  "markdown",
+  "python",
+  "rust",
+  "tsx",
+  "typescript",
+  "text",
+  "yaml",
+] as const;
+
+export const defaultDetailLevel = 3;
+export const defaultMinDetailLevel = 1;
+
+export const NonEmptyStringSchema = Schema.String.pipe(Schema.minLength(1));
+
+export const PlainTextSchema = NonEmptyStringSchema;
+
+export const MarkdownSchema = NonEmptyStringSchema;
+
+export const UuidSchema = Schema.String.pipe(
+  Schema.pattern(uuidPattern, { message: () => "Expected a UUID string" }),
+);
+
+export const IsoDateTimeSchema = Schema.String.pipe(
+  Schema.pattern(isoDateTimePattern, { message: () => "Expected an ISO 8601 UTC date-time string" }),
+);
+
+export const GitSha1Schema = Schema.String.pipe(
+  Schema.pattern(gitSha1Pattern, { message: () => "Expected a 40-character Git SHA-1 hash" }),
+);
+
+export const Sha256Schema = Schema.String.pipe(
+  Schema.pattern(sha256Pattern, { message: () => "Expected a 64-character SHA-256 hash" }),
+);
+
+export const DetailLevelSchema = Schema.Literal(1, 2, 3);
+
+export const LanguageIdSchema = Schema.Literal(...languageIds);
+
+export const RepoRelativePosixPathSchema = Schema.String.pipe(
+  Schema.filter((path) => isRepoRelativePosixPath(path), {
+    message: () => "Expected a repo-relative POSIX path with no absolute path or traversal",
+  }),
+);
+
+export const PositiveLineNumberSchema = Schema.Number.pipe(
+  Schema.filter((line) => Number.isInteger(line) && line >= 1, {
+    message: () => "Expected a 1-based line number",
+  }),
+);
+
+export const NonNegativeIntegerSchema = Schema.Number.pipe(
+  Schema.filter((value) => Number.isInteger(value) && value >= 0, {
+    message: () => "Expected a non-negative integer",
+  }),
+);
+
+export const LineRangeSchema = Schema.Struct({
+  startLine: PositiveLineNumberSchema,
+  endLine: PositiveLineNumberSchema,
+}).pipe(
+  Schema.filter((range) => range.startLine <= range.endLine, {
+    message: () => "Expected startLine to be less than or equal to endLine",
+  }),
+);
+
+export const IntegritySchema = Schema.Struct({
+  algorithm: Schema.Literal("sha256"),
+  hash: Sha256Schema,
+});
+
+export const SnapshotSchema = Schema.Struct({
+  content: Schema.String,
+  language: Schema.optional(LanguageIdSchema),
+});
+
+export const FileRangeAnchorSchema = Schema.Struct({
+  kind: Schema.Literal("fileRange"),
+  path: RepoRelativePosixPathSchema,
+  range: LineRangeSchema,
+  source: Schema.optional(Schema.Literal("commit", "workingTree")),
+  integrity: Schema.optional(IntegritySchema),
+  snapshot: Schema.optional(SnapshotSchema),
+});
+
+export const DiffHunkSchema = Schema.Struct({
+  header: NonEmptyStringSchema,
+  patch: Schema.String,
+  oldStart: Schema.optional(PositiveLineNumberSchema),
+  oldLines: Schema.optional(NonNegativeIntegerSchema),
+  newStart: Schema.optional(PositiveLineNumberSchema),
+  newLines: Schema.optional(NonNegativeIntegerSchema),
+});
+
+export const DiffHunkAnchorSchema = Schema.Struct({
+  kind: Schema.Literal("diffHunk"),
+  path: RepoRelativePosixPathSchema,
+  oldPath: Schema.optional(RepoRelativePosixPathSchema),
+  status: Schema.Literal("added", "modified", "deleted", "renamed"),
+  hunk: DiffHunkSchema,
+});
+
+export const EmbeddedExcerptAnchorSchema = Schema.Struct({
+  kind: Schema.Literal("embeddedExcerpt"),
+  content: NonEmptyStringSchema,
+  path: Schema.optional(RepoRelativePosixPathSchema),
+  language: Schema.optional(LanguageIdSchema),
+  startLine: Schema.optional(PositiveLineNumberSchema),
+});
+
+export const AnchorSchema = Schema.Union(
+  FileRangeAnchorSchema,
+  DiffHunkAnchorSchema,
+  EmbeddedExcerptAnchorSchema,
+);
+
+export const StepSchema = Schema.Struct({
+  kind: Schema.Literal("step"),
+  body: MarkdownSchema,
+  anchor: Schema.optional(AnchorSchema),
+  minDetailLevel: Schema.optional(DetailLevelSchema),
+});
+
+export const FlowSchema = Schema.Struct({
+  kind: Schema.Literal("flow"),
+  title: PlainTextSchema,
+  steps: Schema.Array(StepSchema).pipe(Schema.minItems(2)),
+  minDetailLevel: Schema.optional(DetailLevelSchema),
+});
+
+export const TopicItemSchema = Schema.Union(StepSchema, FlowSchema);
+
+export const TopicSchema = Schema.Struct({
+  title: PlainTextSchema,
+  items: Schema.Array(TopicItemSchema).pipe(Schema.minItems(1)),
+});
+
+export const RepoInfoSchema = Schema.Struct({
+  vcs: Schema.Literal("git"),
+  commit: GitSha1Schema,
+  rootHint: Schema.optional(Schema.String),
+  remoteUrl: Schema.optional(Schema.String),
+  baseRef: Schema.optional(Schema.String),
+  headRef: Schema.optional(Schema.String),
+});
+
+export const TourSchema = Schema.Struct({
+  schemaVersion: Schema.Literal(1),
+  id: UuidSchema,
+  title: PlainTextSchema,
+  description: NonEmptyStringSchema,
+  createdAt: IsoDateTimeSchema,
+  topics: Schema.Array(TopicSchema).pipe(Schema.minItems(1)),
+  goal: Schema.optional(NonEmptyStringSchema),
+  defaultDetailLevel: Schema.optional(DetailLevelSchema),
+  repo: Schema.optional(RepoInfoSchema),
+});
+
+export type DetailLevel = Schema.Schema.Type<typeof DetailLevelSchema>;
+export type LanguageId = Schema.Schema.Type<typeof LanguageIdSchema>;
+export type LineRange = Schema.Schema.Type<typeof LineRangeSchema>;
+export type Integrity = Schema.Schema.Type<typeof IntegritySchema>;
+export type Snapshot = Schema.Schema.Type<typeof SnapshotSchema>;
+export type FileRangeAnchor = Schema.Schema.Type<typeof FileRangeAnchorSchema>;
+export type DiffHunk = Schema.Schema.Type<typeof DiffHunkSchema>;
+export type DiffHunkAnchor = Schema.Schema.Type<typeof DiffHunkAnchorSchema>;
+export type EmbeddedExcerptAnchor = Schema.Schema.Type<typeof EmbeddedExcerptAnchorSchema>;
+export type Anchor = Schema.Schema.Type<typeof AnchorSchema>;
+export type Step = Schema.Schema.Type<typeof StepSchema>;
+export type Flow = Schema.Schema.Type<typeof FlowSchema>;
+export type TopicItem = Schema.Schema.Type<typeof TopicItemSchema>;
+export type Topic = Schema.Schema.Type<typeof TopicSchema>;
+export type RepoInfo = Schema.Schema.Type<typeof RepoInfoSchema>;
+export type Tour = Schema.Schema.Type<typeof TourSchema>;
+
+export const isLanguageId = (value: string): value is LanguageId =>
+  (languageIds as readonly string[]).includes(value);
+
+export const isRepoRelativePosixPath = (path: string): boolean => {
+  if (path.length === 0) return false;
+  if (path.startsWith("/")) return false;
+  if (path.includes("\\")) return false;
+  return !path.split("/").some((segment) => segment === "" || segment === "." || segment === "..");
+};

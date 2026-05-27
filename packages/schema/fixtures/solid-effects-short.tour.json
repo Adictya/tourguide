@@ -1,108 +1,22 @@
 {
   "schemaVersion": 1,
-  "id": "solid-effects-short",
-  "title": "Solid Effects + Async Short Tour",
-  "intent": "Explain the split effect path from public API through async scheduling.",
-  "generator": {
-    "name": "tourguide-scaffold"
-  },
-  "repo": {
-    "vcs": "git",
-    "rootHint": "Solid repository root"
-  },
+  "id": "550e8400-e29b-41d4-a716-446655440001",
+  "title": "Solid Effects Short Tour",
+  "description": "A compact v1 Tour fixture for schema validation.",
+  "createdAt": "2026-05-24T12:34:56.000Z",
   "topics": [
     {
-      "title": "1. Why Split Effects",
-      "steps": [
+      "title": "Fixture",
+      "items": [
         {
-          "title": "Concept: compute before apply",
-          "body": "# Solid 2.0: Split Effects\n\nThe old single callback mixed dependency discovery with side effects. Solid 2.0 separates `compute` from `apply` so the runtime can discover dependencies and async readiness before user effects run.",
-          "presentation": {
-            "kind": "single"
+          "kind": "step",
+          "body": "This fixture validates the authored Tour shape.",
+          "anchor": {
+            "kind": "embeddedExcerpt",
+            "content": "createEffect(() => render());",
+            "language": "typescript",
+            "startLine": 1
           }
-        },
-        {
-          "title": "RFC rationale",
-          "body": "The RFC frames split effects as part of a broader reactivity model: stricter writes, top-level read warnings, batching, async, and boundaries.",
-          "presentation": {
-            "kind": "flow"
-          },
-          "anchors": [
-            {
-              "kind": "fileRange",
-              "path": "documentation/solid-2.0/01-reactivity-batching-effects.md",
-              "range": {
-                "startLine": 97,
-                "endLine": 109
-              },
-              "note": "Compute records dependencies; effect runs after all compute phases in the batch."
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "2. Internal Effect Node",
-      "steps": [
-        {
-          "id": "internal-effect-node",
-          "title": "effect() creates a lazy computed",
-          "body": "Internally, an effect is represented as a computed node plus owner/effect-specific fields.",
-          "presentation": {
-            "kind": "flow"
-          },
-          "anchors": [
-            {
-              "kind": "fileRange",
-              "path": "packages/solid-signals/src/core/effect.ts",
-              "range": {
-                "startLine": 32,
-                "endLine": 48
-              },
-              "note": "effect() wraps the compute half in computed(..., { lazy: true })."
-            },
-            {
-              "kind": "fileRange",
-              "path": "packages/solid-signals/src/core/effect.ts",
-              "range": {
-                "startLine": 118,
-                "endLine": 142
-              },
-              "note": "runEffect is the apply half that executes the side effect with the computed value."
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "3. Async Subpath",
-      "steps": [
-        {
-          "title": "handleAsync detects pending work",
-          "body": "Async values produced during compute are converted into suspension and later resumption.",
-          "presentation": {
-            "kind": "flow"
-          },
-          "anchors": [
-            {
-              "kind": "fileRange",
-              "path": "packages/solid-signals/src/core/async.ts",
-              "range": {
-                "startLine": 131,
-                "endLine": 147
-              },
-              "note": "handleAsync detects Promise-like values or AsyncIterables."
-            },
-            {
-              "kind": "fileRange",
-              "path": "packages/solid-signals/src/core/async.ts",
-              "range": {
-                "startLine": 200,
-                "endLine": 219
-              },
-              "note": "Unresolved promises initialize a transition and throw NotReadyError from the compute path."
-            }
-          ]
         }
       ]
     }

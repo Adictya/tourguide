@@ -1,18 +1,54 @@
-export { tourSchema } from "./schema.js";
-export { assertValidTour, validateTour } from "./validate.js";
-export type { ValidationIssue, ValidationResult } from "./validate.js";
+export {
+  formatTourValidationError,
+  formatTourValidationIssues,
+  TourJsonParseError,
+  TourSchemaError,
+  TourSemanticError,
+} from "./errors.js";
+export type { TourValidationError, ValidationIssue } from "./errors.js";
+export {
+  AnchorSchema,
+  defaultDetailLevel,
+  defaultMinDetailLevel,
+  DetailLevelSchema,
+  DiffHunkAnchorSchema,
+  DiffHunkSchema,
+  EmbeddedExcerptAnchorSchema,
+  FileRangeAnchorSchema,
+  GitSha1Schema,
+  IntegritySchema,
+  IsoDateTimeSchema,
+  LanguageIdSchema,
+  languageIds,
+  LineRangeSchema,
+  MarkdownSchema,
+  PlainTextSchema,
+  RepoInfoSchema,
+  RepoRelativePosixPathSchema,
+  Sha256Schema,
+  SnapshotSchema,
+  StepSchema,
+  TopicItemSchema,
+  TopicSchema,
+  TourSchema,
+  UuidSchema,
+} from "./schema.js";
 export type {
   Anchor,
-  AnchorRole,
-  BaseAnchor,
+  DetailLevel,
+  DiffHunk,
   DiffHunkAnchor,
   EmbeddedExcerptAnchor,
   FileRangeAnchor,
-  GeneratorInfo,
-  Presentation,
+  Flow,
+  Integrity,
+  LanguageId,
+  LineRange,
   RepoInfo,
-  SourceRange,
+  Snapshot,
   Step,
   Topic,
-  Tour
-} from "./types.js";
+  TopicItem,
+  Tour,
+} from "./schema.js";
+export { parseTour, parseTourJson, validateTour } from "./validate.js";
