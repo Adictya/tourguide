@@ -20,7 +20,8 @@
   "dependencies": {
     "@tourguide/core": "workspace:*",
     "@tourguide/schema": "workspace:*",
-    "@tourguide/tui": "workspace:*"
+    "@tourguide/tui": "workspace:*",
+    "effect": "latest"
   },
   "devDependencies": {
     "@types/node": "latest",
