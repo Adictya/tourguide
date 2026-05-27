@@ -37,8 +37,8 @@ The grounded evidence or concrete reference that a Step points at. An Anchor is 
 _Avoid_: Step, note, pane, section
 
 **Execution Capture**:
-Recorded runtime evidence collected from an actual program execution without requiring source-code edits. An Execution Capture may enrich Anchors or Flows with observed values, events, or timing, but it is not itself the authored explanation.
-_Avoid_: Trace, log, instrumentation, debugger session
+Recorded runtime evidence collected from an actual program execution without requiring source-code edits. An Execution Capture may enrich Anchors or Flows with observed values, events, or timing, but it is not itself the authored explanation or the capture instructions used to collect that evidence.
+_Avoid_: Trace, log, instrumentation, debugger session, capture request
 
 **Tour Session**:
 One active viewing and navigation instance of a Tour on a Presentation Surface. A Tour Session contains transient state such as the current Step, active Detail Level, overlays, and scroll position.
@@ -129,6 +129,10 @@ Domain expert: "Yes. Reuse the same Anchor target when the same evidence support
 Dev: "Is a debugger breakpoint capture a Flow?"
 
 Domain expert: "No. It is Execution Capture evidence that may enrich the Step or Flow being presented; the authored Flow still organizes Steps."
+
+Dev: "Are the debugger launch command and expressions to evaluate part of an Execution Capture?"
+
+Domain expert: "No. Those are capture instructions owned by the capture workflow. The Execution Capture is the recorded evidence produced after the program actually ran."
 
 Dev: "The user pressed next on the terminal surface. Did the Tour change?"
 

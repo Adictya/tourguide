@@ -27,6 +27,8 @@ Use `CONTEXT.md` for language and `docs/tour-v1-contract.md` for the v1 artifact
 9. Optionally run `tourguide validate --hydrate --lint .tourguide/tours/<short-human-slug>.tour.json` for quality warnings.
 10. Tell the user how to open it with `tourguide view .tourguide/tours/<short-human-slug>.tour.json`.
 
+For runtime evidence work, see [Execution Capture Reference](EXECUTION-CAPTURE.md). Treat it as prototype guidance only; do not add capture instructions to v1 Tours.
+
 ## Authored Artifact Shape
 
 This is the minimal authored shape. The CLI hydrates generated file evidence fields such as `repo.commit`, `fileRange.source`, `fileRange.integrity`, and generated snapshots.

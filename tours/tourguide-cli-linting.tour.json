@@ -1,0 +1,344 @@
+{
+  "schemaVersion": 1,
+  "id": "2f2053d1-7f34-4185-ad2f-8600fb2fee10",
+  "title": "TourGuide CLI Linting Logic",
+  "description": "Explains how `tourguide validate --lint` reaches schema validation, evidence readiness, hydration, and quality warning checks.",
+  "createdAt": "2026-05-27T18:58:47.000Z",
+  "topics": [
+    {
+      "title": "1. CLI Entry",
+      "items": [
+        {
+          "kind": "flow",
+          "title": "Validate Command Path",
+          "steps": [
+            {
+              "kind": "step",
+              "body": "All CLI execution starts in `main()`. The linting path is not a standalone command: users enter it through the `validate` command, which dispatches into `validateCommand`.",
+              "anchor": {
+                "kind": "fileRange",
+                "path": "packages/cli/src/index.ts",
+                "range": {
+                  "startLine": 43,
+                  "endLine": 59
+                },
+                "source": "commit",
+                "integrity": {
+                  "algorithm": "sha256",
+                  "hash": "24544c35cb93dc48b8e01cc398c8e4af1ad947ca66a2ce77062f312b5a56e8da"
+                }
+              }
+            },
+            {
+              "kind": "step",
+              "body": "Argument parsing stores `--lint` as a boolean flag. Only `--step`, `--detail`, and `--output` consume following values, so `--lint` simply toggles the later warning pass.",
+              "anchor": {
+                "kind": "fileRange",
+                "path": "packages/cli/src/index.ts",
+                "range": {
+                  "startLine": 62,
+                  "endLine": 112
+                },
+                "source": "commit",
+                "integrity": {
+                  "algorithm": "sha256",
+                  "hash": "f883a19cc1de7841aab87e94fe41cfff1865647878f927c3d0066488d4e91e83"
+                }
+              }
+            },
+            {
+              "kind": "step",
+              "body": "`validateCommand` is the orchestration point. It loads the Tour, optionally hydrates it, otherwise checks evidence readiness, then calls `printLintWarnings(tour)` only when the flag is present. The final success line is printed after warnings, which makes lint additive rather than a separate validation mode.",
+              "anchor": {
+                "kind": "fileRange",
+                "path": "packages/cli/src/index.ts",
+                "range": {
+                  "startLine": 114,
+                  "endLine": 140
+                },
+                "source": "commit",
+                "integrity": {
+                  "algorithm": "sha256",
+                  "hash": "543835a8b300c37f21f88cf5d6a24cdf26d005d4084cfdc0124b9c0cff9cc606"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "2. Validation Gate",
+      "items": [
+        {
+          "kind": "flow",
+          "title": "Parsing And Semantics",
+          "steps": [
+            {
+              "kind": "step",
+              "body": "Before lint can report quality warnings, the CLI must have a valid Tour object. `loadTourResult` reads the file and turns JSON, schema, or semantic failures into path-based `ValidationIssue` values.",
+              "anchor": {
+                "kind": "fileRange",
+                "path": "packages/cli/src/index.ts",
+                "range": {
+                  "startLine": 240,
+                  "endLine": 259
+                },
+                "source": "commit",
+                "integrity": {
+                  "algorithm": "sha256",
+                  "hash": "fec7525bd1123f65ddc1df12d584d63a5cb186f3b153a0023a2b791379be372a"
+                }
+              }
+            },
+            {
+              "kind": "step",
+              "body": "The schema package performs strict decoding with excess properties rejected, then runs semantic validation. This means legacy fields or malformed authored structure fail before lint-specific quality checks run.",
+              "anchor": {
+                "kind": "fileRange",
+                "path": "packages/schema/src/validate.ts",
+                "range": {
+                  "startLine": 13,
+                  "endLine": 40
+                },
+                "source": "commit",
+                "integrity": {
+                  "algorithm": "sha256",
+                  "hash": "2bddf42bf29c18a6a33bcebe9138f1cafdba366dcd847ee60957e05f26dbdd72"
+                }
+              }
+            },
+            {
+              "kind": "step",
+              "body": "Semantic validation first reserves globally unique Topic and Flow slugs, then visits every Step, including Steps nested in Flows. Each Step contributes Markdown checks and Anchor-specific checks.",
+              "anchor": {
+                "kind": "fileRange",
+                "path": "packages/schema/src/validate.ts",
+                "range": {
+                  "startLine": 47,
+                  "endLine": 85
+                },
+                "source": "commit",
+                "integrity": {
+                  "algorithm": "sha256",
+                  "hash": "b6aa7872033d13d432d89b7f1b25fed583abba87b93dc9745ffd50f7a05dc06d"
+                }
+              }
+            },
+            {
+              "kind": "step",
+              "body": "These semantic checks are validation errors, not lint warnings: working-tree anchors need snapshots, hydrated anchors need integrity, diff hunk metadata must match the hunk header, Markdown cannot use images or raw HTML, fence languages must be canonical, and internal links must resolve to Topic or Flow slugs.",
+              "anchor": {
+                "kind": "fileRange",
+                "path": "packages/schema/src/validate.ts",
+                "range": {
+                  "startLine": 87,
+                  "endLine": 188
+                },
+                "source": "commit",
+                "integrity": {
+                  "algorithm": "sha256",
+                  "hash": "fc316d396cf91497cabe9e47d74ba5fd792296127d06234e0b0e5afb755095f4"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "3. Evidence Readiness",
+      "items": [
+        {
+          "kind": "flow",
+          "title": "Hydrate Or Resolve",
+          "steps": [
+            {
+              "kind": "step",
+              "body": "With `--hydrate`, validation becomes mutating. The CLI collects fileRange Anchors, finds the Git root and commit, chooses committed or working-tree evidence, writes generated `source` and `integrity`, adds snapshots for working-tree evidence, and fails if an Anchor cannot resolve.",
+              "anchor": {
+                "kind": "fileRange",
+                "path": "packages/cli/src/index.ts",
+                "range": {
+                  "startLine": 363,
+                  "endLine": 408
+                },
+                "source": "commit",
+                "integrity": {
+                  "algorithm": "sha256",
+                  "hash": "19043723775eff5a9690cb9f90991145cd73beb7e698c4e8c79ed9718eeaec26"
+                }
+              }
+            },
+            {
+              "kind": "step",
+              "body": "Anchor collection treats standalone Steps and Flow Steps the same way. Lint does not need a separate traversal for evidence; hydration and readiness checks already walk the authored Step order and gather every fileRange Anchor.",
+              "anchor": {
+                "kind": "fileRange",
+                "path": "packages/cli/src/index.ts",
+                "range": {
+                  "startLine": 466,
+                  "endLine": 487
+                },
+                "source": "commit",
+                "integrity": {
+                  "algorithm": "sha256",
+                  "hash": "fce08623948a44ff8e1b9d8d8a5119f177fed65f3f1d90bdbe230a2854d3825e"
+                }
+              }
+            },
+            {
+              "kind": "step",
+              "body": "Without `--hydrate`, validation stays read-only but still requires presentable evidence. `collectReadinessIssues` fails unresolved fileRange Anchors, and `resolveFileRangeUnsafe` tries live content with matching integrity, then the recorded commit, then a generated snapshot.",
+              "anchor": {
+                "kind": "fileRange",
+                "path": "packages/cli/src/index.ts",
+                "range": {
+                  "startLine": 420,
+                  "endLine": 464
+                },
+                "source": "commit",
+                "integrity": {
+                  "algorithm": "sha256",
+                  "hash": "f2a2fdf884d23e86e46c0a0eb52e3779f905ab89b5720132ef0414b21791c411"
+                }
+              }
+            },
+            {
+              "kind": "step",
+              "body": "The contract explains why lint runs after readiness: plain `validate` means the Tour can be presented on the current machine, while `validate --hydrate` fills generated repository and file evidence fields before writing the file.",
+              "anchor": {
+                "kind": "fileRange",
+                "path": "docs/tour-v1-contract.md",
+                "range": {
+                  "startLine": 345,
+                  "endLine": 379
+                },
+                "source": "commit",
+                "integrity": {
+                  "algorithm": "sha256",
+                  "hash": "4cfaadaf6c4061354524aa76711937c35d007d93f533f90b56521600fcc88b4d"
+                }
+              },
+              "minDetailLevel": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "4. Lint Warnings",
+      "items": [
+        {
+          "kind": "flow",
+          "title": "Quality Warning Pass",
+          "steps": [
+            {
+              "kind": "step",
+              "body": "The lint pass itself is intentionally small. `printLintWarnings` collects warnings and writes each one to stderr as `warning PATH: MESSAGE`; it does not create a `CliError` or change the success path.",
+              "anchor": {
+                "kind": "fileRange",
+                "path": "packages/cli/src/index.ts",
+                "range": {
+                  "startLine": 572,
+                  "endLine": 577
+                },
+                "source": "commit",
+                "integrity": {
+                  "algorithm": "sha256",
+                  "hash": "23aaca78c382fd6967b8e3c8e0aa15c19fc59e05b6e4fb17d9ee3a9cbb72e972"
+                }
+              }
+            },
+            {
+              "kind": "step",
+              "body": "The current warning rules are quality heuristics: missing `goal`, and more than three consecutive anchorless Steps. The anchorless counter follows the same ordered traversal across Topic items and Flow steps, resets when an Anchor appears, and emits when the fourth consecutive anchorless Step is reached.",
+              "anchor": {
+                "kind": "fileRange",
+                "path": "packages/cli/src/index.ts",
+                "range": {
+                  "startLine": 579,
+                  "endLine": 604
+                },
+                "source": "commit",
+                "integrity": {
+                  "algorithm": "sha256",
+                  "hash": "daefa2d537045dbe57ee06b5e5f3e0510335f901cd664c7c925406a6918b9e68"
+                }
+              }
+            },
+            {
+              "kind": "step",
+              "body": "The v1 contract matches the implementation: lint is a flag on validation, missing `goal` is warning-only, long anchorless runs may warn, and warnings do not fail validation unless a future strict mode is introduced.",
+              "anchor": {
+                "kind": "fileRange",
+                "path": "docs/tour-v1-contract.md",
+                "range": {
+                  "startLine": 392,
+                  "endLine": 399
+                },
+                "source": "commit",
+                "integrity": {
+                  "algorithm": "sha256",
+                  "hash": "ca3c8fda20fde0fb8aa7e72e0d101adc19ac6d9abb34eea15d4274bba91d4bb6"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "5. Error Reporting Contrast",
+      "items": [
+        {
+          "kind": "flow",
+          "title": "Failures Versus Warnings",
+          "steps": [
+            {
+              "kind": "step",
+              "body": "Validation failures become a single `CliError` by joining issue paths and messages. This is the failure mechanism that lint deliberately avoids.",
+              "anchor": {
+                "kind": "fileRange",
+                "path": "packages/cli/src/index.ts",
+                "range": {
+                  "startLine": 276,
+                  "endLine": 282
+                },
+                "source": "commit",
+                "integrity": {
+                  "algorithm": "sha256",
+                  "hash": "89eaa2364ecf182cf737d422c5eb920d239c9bb3858949e68b11e85e408b4773"
+                }
+              },
+              "minDetailLevel": 2
+            },
+            {
+              "kind": "step",
+              "body": "The schema package normalizes JSON parse, schema, and semantic errors into the same `{ path, message }` issue shape. The CLI can therefore print validation failures consistently, while lint warnings reuse the same issue shape only for non-fatal output.",
+              "anchor": {
+                "kind": "fileRange",
+                "path": "packages/schema/src/errors.ts",
+                "range": {
+                  "startLine": 5,
+                  "endLine": 43
+                },
+                "source": "commit",
+                "integrity": {
+                  "algorithm": "sha256",
+                  "hash": "33fb7c70d26171a8405ddb28174c45afb51e0cb95b4a6298f01093715db33127"
+                }
+              },
+              "minDetailLevel": 2
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "goal": "Maintain an implementation explanation of the TourGuide CLI linting path and its relationship to validation, hydration, and schema semantics.",
+  "repo": {
+    "vcs": "git",
+    "commit": "592f7eff06ccecfb885ec52ce222d49818cf221b"
+  }
+}
