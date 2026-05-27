@@ -1,37 +1,52 @@
-import type { Anchor, Presentation, RepoInfo, Tour } from "@tourguide/schema";
+import type { Anchor, DetailLevel, RepoInfo, Tour } from "@tourguide/schema";
 
 export type NormalizedTour = {
   schemaVersion: Tour["schemaVersion"];
   id: string;
   title: string;
-  intent?: string;
-  description?: string;
-  createdAt?: string;
-  generator?: Tour["generator"];
+  description: string;
+  createdAt: string;
+  goal?: string;
+  defaultDetailLevel: DetailLevel;
   repo?: RepoInfo;
   topics: NormalizedTopic[];
+  flows: NormalizedFlow[];
   steps: NormalizedStep[];
 };
 
 export type NormalizedTopic = {
   id: string;
   title: string;
-  body?: string;
   index: number;
+  stepIds: string[];
+};
+
+export type NormalizedFlow = {
+  id: string;
+  title: string;
+  topicId: string;
+  topicTitle: string;
+  topicIndex: number;
+  itemIndex: number;
+  minDetailLevel: DetailLevel;
   stepIds: string[];
 };
 
 export type NormalizedStep = {
   id: string;
   title: string;
-  body?: string;
+  body: string;
+  minDetailLevel: DetailLevel;
   topicId: string;
   topicTitle: string;
   topicIndex: number;
+  itemIndex: number;
   stepIndex: number;
   globalIndex: number;
+  flowId?: string;
+  flowTitle?: string;
   primaryAnchorId?: string;
-  presentation: Presentation;
+  anchor?: NormalizedAnchor;
   anchors: NormalizedAnchor[];
 };
 
@@ -44,8 +59,8 @@ export type StepContext = {
   tour: {
     id: string;
     title: string;
-    intent?: string;
-    description?: string;
+    description: string;
+    goal?: string;
   };
   step: NormalizedStep;
   progress: {
