@@ -34,7 +34,7 @@ const TourOption = (props: { tour: TourFile; selected: boolean; onClick: () => v
         <b>{props.tour.title}</b>
       </text>
       <text fg={active() ? "#ddd" : "#777"}>---</text>
-      <text fg={active() ? "#ddd" : "#777"}>{props.tour.description ?? props.tour.intent ?? "No description"}</text>
+      <text fg={active() ? "#ddd" : "#777"}>{props.tour.description ?? props.tour.goal ?? "No description"}</text>
       <text fg={active() ? "#ddd" : "#777"}>---</text>
       <text fg={active() ? "#93c5fd" : "#666"}>{props.tour.path}</text>
     </box>

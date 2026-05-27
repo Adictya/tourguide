@@ -3,7 +3,7 @@ import type { NormalizedTour } from "@tourguide/core";
 export type TourFile = {
   path: string;
   title: string;
-  intent?: string | undefined;
+  goal?: string | undefined;
   description?: string | undefined;
 };
 

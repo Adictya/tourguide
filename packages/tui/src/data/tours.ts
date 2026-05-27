@@ -26,7 +26,7 @@ const parseTourSummary = (contents: string, filePath: string): TourFile => {
     const parsed = JSON.parse(contents) as {
       title?: unknown;
       id?: unknown;
-      intent?: unknown;
+      goal?: unknown;
       description?: unknown;
     };
 
@@ -38,21 +38,25 @@ const parseTourSummary = (contents: string, filePath: string): TourFile => {
           : typeof parsed.id === "string" && parsed.id.length > 0
             ? parsed.id
             : basename(filePath),
-      ...(typeof parsed.intent === "string" ? { intent: parsed.intent } : {}),
+      ...(typeof parsed.goal === "string" ? { goal: parsed.goal } : {}),
       ...(typeof parsed.description === "string" ? { description: parsed.description } : {}),
     };
   } catch {
     return {
       path: relative(cwd, filePath),
       title: basename(filePath),
-      intent: "Invalid JSON",
+      goal: "Invalid JSON",
     };
   }
 };
 
 export const loadTours = async (): Promise<TourFile[]> => {
   const files = Array.from(
-    new Set([...(await readTourDirectory(cwd)), ...(await readTourDirectory(join(cwd, "tours")))]),
+    new Set([
+      ...(await readTourDirectory(join(cwd, ".tourguide", "tours"))),
+      ...(await readTourDirectory(cwd)),
+      ...(await readTourDirectory(join(cwd, "tours"))),
+    ]),
   ).sort();
 
   return Promise.all(

@@ -19,4 +19,8 @@ const App = () => {
   );
 };
 
-render(App);
+export function runTui() {
+  render(App);
+}
+
+if (import.meta.main) runTui();
