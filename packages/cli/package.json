@@ -18,9 +18,10 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@effect/cli": "latest",
+    "@effect/platform-node": "latest",
     "@tourguide/core": "workspace:*",
     "@tourguide/schema": "workspace:*",
-    "@tourguide/tui": "workspace:*",
     "effect": "latest"
   },
   "devDependencies": {

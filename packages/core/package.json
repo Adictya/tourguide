@@ -14,7 +14,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@tourguide/schema": "workspace:*"
+    "@tourguide/schema": "workspace:*",
+    "effect": "latest"
   },
   "devDependencies": {
     "@types/node": "latest",
