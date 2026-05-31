@@ -113,4 +113,111 @@ describe("Tour v1 schema", () => {
     expect(issues.some((issue) => issue.message.includes("Raw HTML"))).toBe(true);
     expect(issues.some((issue) => issue.message.includes("Invalid fenced code language"))).toBe(true);
   });
+
+  it("accepts Trace detail level and captured Flow metadata", async () => {
+    const input = validTour();
+    input.defaultDetailLevel = 4;
+    const item = input.topics[0]!.items[1]!;
+    if (item.kind !== "flow") throw new Error("expected flow");
+    item.minDetailLevel = 4;
+    item.capture = {
+      origin: "cli",
+      input: {
+        format: "structured-log-jsonl",
+        path: ".tourguide/captures/signup.raw.jsonl",
+      },
+    };
+    item.steps[0]!.minDetailLevel = 4;
+    item.steps[0]!.observation = null;
+
+    const tour = await Effect.runPromise(parseTour(input));
+
+    expect(tour.defaultDetailLevel).toBe(4);
+  });
+
+  it("accepts sanitized Capture Observations on captured Flow Steps", async () => {
+    const input = validTour();
+    const item = input.topics[0]!.items[1]!;
+    if (item.kind !== "flow") throw new Error("expected flow");
+    item.capture = { origin: "authored" };
+    item.steps[0]!.observation = {
+      capturePoint: { line: 5, column: 1 },
+      callStack: {
+        frames: [
+          { name: "validateSignup", path: "packages/schema/src/schema.ts", line: 5 },
+        ],
+      },
+      values: {
+        inputs: {
+          email: { type: "string", value: "<placeholder-user-email>", redacted: true },
+        },
+        locals: {
+          attempts: { type: "number", value: 1 },
+        },
+        outputs: {
+          result: { type: "boolean", value: false },
+        },
+        error: null,
+      },
+    };
+
+    const tour = await Effect.runPromise(parseTour(input));
+
+    expect(tour.topics[0]!.items[1]!.kind).toBe("flow");
+  });
+
+  it("rejects observations outside captured Flows", async () => {
+    const input = validTour();
+    const item = input.topics[0]!.items[0]!;
+    if (item.kind !== "step") throw new Error("expected step");
+    item.observation = null;
+
+    const error = await Effect.runPromise(Effect.flip(parseTour(input)));
+    const issues = await Effect.runPromise(formatTourValidationIssues(error));
+
+    expect(issues.some((issue) => issue.message.includes("only valid inside captured Flows"))).toBe(true);
+  });
+
+  it("rejects non-null observations without fileRange Anchors", async () => {
+    const input = validTour();
+    const item = input.topics[0]!.items[1]!;
+    if (item.kind !== "flow") throw new Error("expected flow");
+    item.capture = { origin: "authored" };
+    item.steps[1]!.observation = {
+      callStack: { frames: [{ name: "render" }] },
+      values: {
+        inputs: {},
+        locals: {},
+        outputs: {},
+        error: null,
+      },
+    };
+
+    const error = await Effect.runPromise(Effect.flip(parseTour(input)));
+    const issues = await Effect.runPromise(formatTourValidationIssues(error));
+
+    expect(issues.some((issue) => issue.message.includes("Observed Steps require a fileRange Anchor"))).toBe(true);
+  });
+
+  it("rejects capture points outside the Step Anchor", async () => {
+    const input = validTour();
+    const item = input.topics[0]!.items[1]!;
+    if (item.kind !== "flow") throw new Error("expected flow");
+    item.capture = { origin: "authored" };
+    item.steps[0]!.observation = {
+      capturePoint: { line: 99 },
+      callStack: { frames: [{ name: "validateSignup" }] },
+      values: {
+        inputs: {},
+        locals: {},
+        outputs: {},
+        error: null,
+      },
+    };
+
+    const error = await Effect.runPromise(Effect.flip(parseTour(input)));
+    const issues = await Effect.runPromise(formatTourValidationIssues(error));
+
+    expect(issues.some((issue) => issue.message.includes("inside the Step fileRange Anchor"))).toBe(true);
+  });
 });

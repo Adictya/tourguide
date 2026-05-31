@@ -1,0 +1,63 @@
+{
+  "resourceSpans": [
+    {
+      "resource": {
+        "attributes": [
+          { "key": "service.name", "value": { "stringValue": "quote-service" } },
+          { "key": "deployment.environment.name", "value": { "stringValue": "test" } }
+        ]
+      },
+      "scopeSpans": [
+        {
+          "scope": { "name": "tourguide-otel-poc", "version": "0.1.0" },
+          "spans": [
+            {
+              "traceId": "5b8efff798038103d269b633813fc60c",
+              "spanId": "eee19b7ec3c1b174",
+              "name": "GET /quote",
+              "kind": 2,
+              "startTimeUnixNano": "1716811200000000000",
+              "endTimeUnixNano": "1716811200030000000",
+              "attributes": [
+                { "key": "http.request.method", "value": { "stringValue": "GET" } },
+                { "key": "url.path", "value": { "stringValue": "/quote" } }
+              ],
+              "status": { "code": 1 }
+            },
+            {
+              "traceId": "5b8efff798038103d269b633813fc60c",
+              "spanId": "1a2b3c4d5e6f7081",
+              "parentSpanId": "eee19b7ec3c1b174",
+              "name": "computeQuote",
+              "kind": 1,
+              "startTimeUnixNano": "1716811200005000000",
+              "endTimeUnixNano": "1716811200015000000",
+              "attributes": [
+                { "key": "code.file.path", "value": { "stringValue": "/workspace/tourguide/src/sample.ts" } },
+                { "key": "code.line.number", "value": { "intValue": "12" } },
+                { "key": "code.column.number", "value": { "intValue": "3" } },
+                { "key": "code.function.name", "value": { "stringValue": "computeQuote" } },
+                { "key": "quote.subtotal", "value": { "intValue": "35" } },
+                { "key": "quote.total", "value": { "intValue": "28" } },
+                { "key": "customer.email", "value": { "stringValue": "ada@example.invalid" } },
+                { "key": "app.secret_token", "value": { "stringValue": "example-secret-value" } }
+              ],
+              "events": [
+                {
+                  "timeUnixNano": "1716811200010000000",
+                  "name": "discount.calculated",
+                  "attributes": [
+                    { "key": "code.file.path", "value": { "stringValue": "/workspace/tourguide/src/sample.ts" } },
+                    { "key": "code.line.number", "value": { "intValue": "14" } },
+                    { "key": "quote.discount.percent", "value": { "doubleValue": 0.2 } }
+                  ]
+                }
+              ],
+              "status": { "code": 1 }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

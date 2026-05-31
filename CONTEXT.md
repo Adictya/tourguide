@@ -21,7 +21,7 @@ A named conceptual section of a Tour that groups ordered Steps and Flows around 
 _Avoid_: Folder, category, sidebar section
 
 **Flow**:
-A contiguous ordered group of Steps inside one Topic that should be understood as one path, comparison, or tightly coupled sequence. A Flow has a title but no Markdown body; adjacent Steps in a Flow should be presentable together while Step remains the unit of next/previous navigation and each Step may have at most one Anchor.
+A contiguous ordered group of Steps inside one Topic that should be understood as one path, comparison, or tightly coupled sequence. A Flow has a title but no Markdown body; adjacent Steps in a Flow should be presentable together while Step remains the unit of next/previous navigation and each Step may have at most one Anchor; ordered Capture Observations may enrich a Flow when the Flow explains one captured runtime path.
 _Avoid_: Topic, multi-anchor step, folder
 
 **Step**:
@@ -29,7 +29,7 @@ One ordered unit of explanation within a Topic. A Step advances the learner by o
 _Avoid_: Code section, anchor group, slide
 
 **Detail Level**:
-The amount of explanatory depth included while traversing a Tour. TourGuide uses three additive Detail Levels: Overview for the main path, Explore for important module or internal detail, and Deep Dive for edge cases, supporting evidence, or deeper internals; a Tour may recommend a starting Detail Level while a Tour Session owns the active Detail Level.
+The amount of explanatory depth included while traversing a Tour. TourGuide uses four additive Detail Levels: Overview for the main path, Explore for important module or internal detail, Deep Dive for edge cases or deeper internals, and Trace for low-level ordered Capture Observations; a Tour may recommend a starting Detail Level while a Tour Session owns the active Detail Level.
 _Avoid_: Granularity, depth setting, tour type
 
 **Anchor**:
@@ -37,8 +37,12 @@ The grounded evidence or concrete reference that a Step points at. An Anchor is 
 _Avoid_: Step, note, pane, section
 
 **Execution Capture**:
-Recorded runtime evidence collected from an actual program execution without requiring source-code edits. An Execution Capture may enrich Anchors or Flows with observed values, events, or timing, but it is not itself the authored explanation or the capture instructions used to collect that evidence.
+Recorded runtime evidence collected from an actual program execution without requiring source-code edits. An Execution Capture may enrich Anchors or Flows with observed values, Capture Observations, or timing, but it is not itself the authored explanation or the capture instructions used to collect that evidence.
 _Avoid_: Trace, log, instrumentation, debugger session, capture request
+
+**Capture Observation**:
+One targeted, source-located unit of runtime evidence inside an Execution Capture that records how code behaved at a function, branch, or meaningful execution point. A Capture Observation is not a Tour Step; ordered Capture Observations may support a Flow while each Observation may align with a Step Anchor.
+_Avoid_: Step, telemetry event, log line, generic event
 
 **Tour Session**:
 One active viewing and navigation instance of a Tour on a Presentation Surface. A Tour Session contains transient state such as the current Step, active Detail Level, overlays, and scroll position.
@@ -110,6 +114,10 @@ Dev: "Does Deep Dive replace the Overview explanation?"
 
 Domain expert: "No. Detail Levels are additive, so deeper Steps and Flows add context without replacing the main path."
 
+Dev: "Is Trace another name for an Execution Capture?"
+
+Domain expert: "No. Trace is only the fourth Detail Level for low-level ordered Capture Observations; an Execution Capture is the recorded runtime evidence."
+
 Dev: "This explanation needs two code ranges. Should I put both on one Step?"
 
 Domain expert: "No. Split it into adjacent Steps so each Step has at most one Anchor."
@@ -129,6 +137,10 @@ Domain expert: "Yes. Reuse the same Anchor target when the same evidence support
 Dev: "Is a debugger breakpoint capture a Flow?"
 
 Domain expert: "No. It is Execution Capture evidence that may enrich the Step or Flow being presented; the authored Flow still organizes Steps."
+
+Dev: "Should ordered breakpoint hits become standalone Steps?"
+
+Domain expert: "They may become Trace-level Steps inside a Flow when the Flow explains that captured runtime path; each Capture Observation still supports a Step rather than replacing the Step body."
 
 Dev: "Are the debugger launch command and expressions to evaluate part of an Execution Capture?"
 

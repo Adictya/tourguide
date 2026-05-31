@@ -30,7 +30,7 @@ Required fields:
 Optional fields:
 
 - `goal`: LLM-facing maintenance/revision intent. Omit for ephemeral one-off Tours.
-- `defaultDetailLevel`: numeric recommended starting Detail Level. Allowed values are `1`, `2`, `3`. If omitted, default is `3`.
+- `defaultDetailLevel`: numeric recommended starting Detail Level. Allowed values are `1`, `2`, `3`, `4`. If omitted, default is `3`.
 - `repo`: repository context, required in hydrated output when any `fileRange` Anchor exists.
 
 Removed from v1:
@@ -46,6 +46,7 @@ Detail Levels are additive.
 - `1`: Overview.
 - `2`: Explore.
 - `3`: Deep Dive.
+- `4`: Trace.
 
 Tour content may use `minDetailLevel` on Steps and Flows. If omitted, `minDetailLevel` defaults to `1`.
 
@@ -55,6 +56,7 @@ Rules:
 - There is no `maxDetailLevel`.
 - Topics do not have `minDetailLevel`.
 - Anchors do not have `minDetailLevel`.
+- Trace is for low-level ordered Capture Observations inside captured Flows. Trace is not another name for an Execution Capture artifact or an OTel trace.
 - A Tour Session owns the active Detail Level.
 - Changing active Detail Level never mutates the Tour artifact.
 - Topic navigation skips Topics with no included Steps after Detail Level filtering.
@@ -87,7 +89,8 @@ Required fields:
 
 Optional fields:
 
-- `minDetailLevel`: `1`, `2`, or `3`; default `1`.
+- `minDetailLevel`: `1`, `2`, `3`, or `4`; default `1`.
+- `capture`: captured Flow metadata when the Flow explains one ordered runtime path.
 
 Flow rules:
 
@@ -98,6 +101,45 @@ Flow rules:
 - Flow is not a formal higher-order navigation target.
 - Flow presentation requires adjacent Step relationships to be visible together, but not necessarily every Step in the Flow at once.
 - Branching call graphs should be represented as multiple linear Flows, with repeated Anchor targets when a callsite is revisited for a different branch.
+- A Flow with `capture` contains ordered Steps for a captured runtime path. Steps with an `observation` property consume raw capture points in order during hydration; Steps without `observation` are explanatory-only.
+- Low-level capture points that are not part of the normal explanation should remain in the Flow as Trace-level Steps using `minDetailLevel: 4`, not be omitted from the captured path.
+
+### Flow Capture
+
+Flow `capture` is inline Tour evidence metadata, not a separate artifact reference.
+
+Allowed shapes:
+
+```json
+{
+  "origin": "cli",
+  "input": {
+    "format": "dap-transcript",
+    "path": ".tourguide/captures/signup.raw.json"
+  }
+}
+```
+
+```json
+{
+  "origin": "authored"
+}
+```
+
+Fields:
+
+- `origin`: required. Allowed values are `cli` and `authored`.
+- `input`: required when `origin` is `cli`; invalid when `origin` is `authored`.
+- `input.format`: required for CLI-origin capture. Allowed values are `dap-transcript`, `otlp-json-traces`, and `structured-log-jsonl`.
+- `input.path`: required for CLI-origin capture. It is a repo-relative POSIX path to the native capture artifact used for rehydration.
+
+Capture rules:
+
+- `origin: "cli"` means inline Observations are generated or refreshed by `tourguide validate --hydrate` from `capture.input`.
+- `origin: "authored"` means inline Observations were added directly by an LLM or author. Lint warns because values should be verified.
+- `capture.input.path` persists after hydration so capture evidence can be refreshed later.
+- Presentation Surfaces must render from inline Observations and must not require `capture.input.path` to exist.
+- `capture.input.path` is required only for rehydration. Missing input files fail `validate --hydrate` and produce lint warnings during normal validation.
 
 ### Step
 
@@ -109,7 +151,8 @@ Required fields:
 Optional fields:
 
 - `anchor`: one Anchor.
-- `minDetailLevel`: `1`, `2`, or `3`; default `1`.
+- `minDetailLevel`: `1`, `2`, `3`, or `4`; default `1`.
+- `observation`: `null` hydration placeholder or one Capture Observation. Only valid on Steps inside a Flow with `capture`.
 
 Step rules:
 
@@ -120,6 +163,91 @@ Step rules:
 - A Step may be anchorless for conceptual framing, transitions, or summaries.
 - A concrete claim about code should normally have an Anchor.
 - The same Anchor target may appear in multiple Steps when the same evidence supports different conceptual moves.
+- A Step with an `observation` property is an observed Step. `observation: null` marks a draft hydration placeholder.
+- `tourguide validate --hydrate` overwrites existing Observation objects and fills `null` placeholders by raw capture point order.
+- Final readiness validation rejects remaining `observation: null` values.
+- A Step with a non-null Observation must have a `fileRange` Anchor. The Anchor is the display and semantic source range for the Observation.
+- A Trace-level captured Step still requires `body`, but the body may be a terse generated explanation because the Observation carries the low-level runtime evidence.
+
+### Capture Observation
+
+A Capture Observation is structured runtime evidence on one Step inside a captured Flow.
+
+Shape:
+
+```json
+{
+  "capturePoint": { "line": 12, "column": 5 },
+  "callStack": {
+    "frames": [
+      { "name": "validateSignup", "path": "src/signup.ts", "line": 12 },
+      { "name": "handleSignup", "path": "src/routes/signup.ts", "line": 33 }
+    ]
+  },
+  "values": {
+    "inputs": {
+      "email": { "type": "string", "value": "abc@gmail.com" }
+    },
+    "locals": {
+      "normalizedEmail": { "type": "string", "value": "abc@gmail.com" }
+    },
+    "outputs": {
+      "result": { "type": "boolean", "value": false }
+    },
+    "error": null
+  }
+}
+```
+
+Observation fields:
+
+- `capturePoint`: optional exact runtime point inside the Step Anchor. `line` is 1-based. `column` is optional and 1-based when present.
+- `callStack`: required.
+- `callStack.frames`: non-empty array. The first frame is the current observed function or execution point.
+- `frame.name`: required.
+- `frame.path`, `frame.line`, and `frame.column`: optional source metadata.
+- `values`: required.
+- `values.inputs`, `values.locals`, and `values.outputs`: required maps keyed by variable, expression, or semantic value name.
+- `values.error`: required; either `null` or an Error Observation object.
+
+Observation rules:
+
+- Observation has no separate title, summary, or Markdown body. Explanation belongs in the Step body.
+- Observation does not duplicate the Step Anchor range. The Step Anchor is the source range.
+- `capturePoint` records the exact breakpoint/log/span point when the raw capture provides one.
+- The current function name is derived from `callStack.frames[0].name`; there is no separate `function` field.
+- Capture method details do not appear on the Observation. They are represented by Flow `capture.origin` and `capture.input.format`.
+
+Captured value shape:
+
+```json
+{ "type": "string", "value": "abc@gmail.com" }
+```
+
+Allowed `type` values are `string`, `number`, `boolean`, `null`, `array`, `object`, and `unknown`.
+
+Value rules:
+
+- `value` must be sanitized JSON suitable for display.
+- Sensitive values must be replaced with placeholders and marked with `redacted: true`.
+- Raw secrets, tokens, passwords, cookies, authorization headers, private keys, and customer data must not appear in final Tour JSON.
+
+Error Observation shape:
+
+```json
+{
+  "name": "ValidationError",
+  "message": "Domain is not allowed",
+  "value": { "type": "string", "value": "domain_not_allowed" },
+  "stack": [{ "name": "validateSignup", "path": "src/signup.ts", "line": 22 }]
+}
+```
+
+Error rules:
+
+- `message` is required when `values.error` is not `null`.
+- `name`, `value`, and `stack` are optional.
+- `stack` uses the same frame shape as `callStack.frames`.
 
 ## Anchors
 
@@ -331,6 +459,8 @@ Authored shape:
 - Does not include `fileRange.integrity`.
 - Does not include `fileRange.snapshot`.
 - May omit `repo` when tooling can infer it.
+- May include captured Flow `capture` metadata and `observation: null` placeholders before capture hydration.
+- May include authored Observations when capture evidence was entered directly rather than hydrated from a CLI-readable input.
 
 Hydrated shape:
 
@@ -339,6 +469,7 @@ Hydrated shape:
 - Includes generated `fileRange.source`.
 - Includes generated `fileRange.integrity`.
 - Includes generated `fileRange.snapshot` for working-tree file ranges or explicit portable export.
+- Includes hydrated Observation objects for observed Steps in CLI-origin captured Flows.
 
 Generated fields remain inline on Anchors. They are not grouped under a `generated` object.
 
@@ -368,6 +499,12 @@ fileRange presentation resolution order:
 Hydration behavior:
 
 - Performs structural validation first.
+- Hydrates capture Observations for captured Flows with `capture.origin: "cli"` before fileRange Anchor hydration.
+- Reads each `capture.input.path` according to `capture.input.format`.
+- Maps raw capture points to observed Steps by order. Observed Steps are Steps with an `observation` property, whether the value is `null` or an existing Observation object.
+- Overwrites existing Observation objects during rehydration.
+- Leaves Steps without an `observation` property unchanged as explanatory-only Steps.
+- Fails `validate --hydrate` when the raw capture point count does not match the observed Step count for a captured Flow.
 - Fills generated repo context when needed.
 - Infers and writes `fileRange.source` per Anchor.
 - Regenerates `fileRange.integrity`.
@@ -376,7 +513,23 @@ Hydration behavior:
 - Can switch generated `source` between `commit` and `workingTree` when the current evidence state changes.
 - Can remove generated snapshots when they are no longer required, unless snapshot/export mode requested them.
 - Can remove stale generated fileRange fields when an Anchor is no longer a `fileRange`.
-- Does not rewrite authored fields such as title, description, goal, Topic/Flow titles, Step bodies, paths, ranges, or ordering.
+- Does not rewrite authored fields such as title, description, goal, Topic/Flow titles, Step bodies, paths, ranges, ordering, `capture.origin`, or `capture.input`.
+
+Capture input requirements:
+
+- `dap-transcript` input must provide selected capture points with source location, stopped stack frames, and targeted values from debugger evaluation or variables data. Full locals are not required and should remain opt-in.
+- `otlp-json-traces` input must be OTLP JSON trace data with top-level `resourceSpans[]`. Hydrated spans or span events must provide `code.file.path` and `code.line.number`. Targeted values must use role prefixes such as `tourguide.input.email`, `tourguide.local.normalizedEmail`, and `tourguide.output.result`. Parent span chains may be synthesized into `callStack.frames`.
+- `structured-log-jsonl` input must contain one JSON object per targeted observation candidate. Each record must provide source location, `callStack.frames[]`, and optional `values.inputs`, `values.locals`, `values.outputs`, and `values.error` data using the TourGuide captured value shape.
+
+Capture validation rules:
+
+- Structural schema validation allows `observation: null` so authored drafts can be hydrated.
+- Readiness validation without hydration fails if an observed Step still has `observation: null`.
+- Readiness validation fails if a Step with a non-null Observation lacks a `fileRange` Anchor.
+- Readiness validation fails if a captured Flow has `origin: "cli"` but no valid `input.format` or repo-relative `input.path`.
+- Readiness validation fails if a captured Flow has `origin: "authored"` and also has `input`.
+- Normal viewing validation does not require `capture.input.path` to exist when inline Observations are present.
+- `validate --hydrate` fails if `capture.input.path` cannot be read.
 
 Snapshot/export behavior:
 
@@ -387,6 +540,8 @@ Strip behavior:
 
 - v1 should include a way to strip generated fields for LLM editing/token minimization.
 - Strip removes generated Anchor fields such as `source`, `integrity`, and generated fileRange `snapshot`.
+- Strip replaces CLI-origin Observation objects with `null` placeholders while preserving `capture.input`, Step bodies, and Anchors.
+- Strip keeps authored Observations because there is no CLI input path to rehydrate them.
 - Strip keeps top-level `repo` fields, including `commit`.
 
 Lint behavior:
@@ -395,6 +550,9 @@ Lint behavior:
 - `tourguide validate --lint <tour>` reports quality warnings after readiness checks.
 - Missing `goal` is a lint warning only, never a validation error.
 - More than three consecutive anchorless Steps may be a lint warning.
+- Captured Flows with `origin: "authored"` produce a warning that runtime values were authored and should be verified.
+- Captured Flows with missing `capture.input.path` files produce a warning during normal lint, but only fail when `--hydrate` needs to read them.
+- OTel capture inputs that lack role-prefixed values cannot hydrate full function-centric Observations and should produce parser or lint diagnostics.
 - Lint warnings do not fail validation unless a future strict flag is added.
 
 ## Presentation Surface Requirements
@@ -416,6 +574,12 @@ Minimum Active Surface capabilities:
 - Present `embeddedExcerpt` Anchors.
 - When the active Step is inside a Flow, show adjacent Flow Step context together so paired evidence can be compared or traced.
 - Keep Flow windowing or pairing behavior as Presentation Surface/session behavior, not Tour artifact data.
+- Render Capture Observations on captured Steps.
+- Show `inputs`, `outputs`, and selected `locals` inline near the active Step Anchor when space and surface capabilities allow.
+- Show full `inputs`, `locals`, `outputs`, and `error` details in an evidence details area.
+- Show `callStack.frames` in a read-only call stack panel or equivalent read-only region.
+- Show a lightweight indicator when Trace-level captured Steps are hidden by the active Detail Level, such as a hidden observation count.
+- Show a subtle provenance badge for captured Flows, distinguishing CLI-origin and authored evidence.
 
 Not required as shared v1 capabilities:
 
@@ -438,6 +602,8 @@ Legacy Adapter:
 Recommended agent workflow:
 
 - Inspect the target repository before writing the Tour.
+- When a concrete runtime path is needed, run or request DAP, targeted OTel, or targeted structured-log capture before finalizing the captured Flow.
+- Use capture-first hydration for captured Flows: inspect capture output, author Flow Steps with the runtime evidence in mind, mark hydratable Steps with `observation: null`, and run `tourguide validate --hydrate <tour>`.
 - Write authored JSON at `.tourguide/tours/<human-slug>.tour.json`.
 - Minimize LLM output by omitting generated fields.
 - Run `tourguide validate --hydrate <tour>`.
@@ -459,6 +625,9 @@ The LLM may author:
 - Topics, Flows, and Steps.
 - Step bodies.
 - Anchor targets.
+- Flow `capture` metadata.
+- `observation: null` placeholders for Steps that should be hydrated from capture input.
+- Authored Observations when no CLI-readable capture input is available, with the expectation that lint warns and values are verified.
 - `diffHunk` patch data when explaining diffs.
 - `embeddedExcerpt` content when embedded evidence is the primary target.
 

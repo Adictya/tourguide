@@ -8,7 +8,15 @@ import {
   type TourValidationError,
   type ValidationIssue,
 } from "./errors.js";
-import { isLanguageId, type Anchor, type DiffHunk, type Step, type Tour, TourSchema } from "./schema.js";
+import {
+  isLanguageId,
+  type Anchor,
+  type CaptureObservation,
+  type DiffHunk,
+  type Step,
+  type Tour,
+  TourSchema,
+} from "./schema.js";
 
 const decodeTour = Schema.decodeUnknown(TourSchema, {
   errors: "all",
@@ -61,12 +69,14 @@ const collectTourIssues = (tour: Tour): ValidationIssue[] => {
     for (const [itemIndex, item] of topic.items.entries()) {
       const itemPath = `$.topics[${topicIndex}].items[${itemIndex}]`;
       if (item.kind === "step") {
-        collectStepIssues(issues, item, itemPath, slugs);
+        collectStepIssues(issues, item, itemPath, slugs, { insideCapturedFlow: false });
         continue;
       }
 
       for (const [stepIndex, step] of item.steps.entries()) {
-        collectStepIssues(issues, step, `${itemPath}.steps[${stepIndex}]`, slugs);
+        collectStepIssues(issues, step, `${itemPath}.steps[${stepIndex}]`, slugs, {
+          insideCapturedFlow: item.capture !== undefined,
+        });
       }
     }
   }
@@ -79,9 +89,52 @@ const collectStepIssues = (
   step: Step,
   stepPath: string,
   slugs: ReadonlyMap<string, string>,
+  context: { insideCapturedFlow: boolean },
 ): void => {
   collectMarkdownIssues(issues, step.body, `${stepPath}.body`, slugs);
   if (step.anchor) collectAnchorIssues(issues, step.anchor, `${stepPath}.anchor`);
+  collectObservationIssues(issues, step, stepPath, context);
+};
+
+const hasOwn = (value: object, key: PropertyKey): boolean => Object.prototype.hasOwnProperty.call(value, key);
+
+const collectObservationIssues = (
+  issues: ValidationIssue[],
+  step: Step,
+  stepPath: string,
+  context: { insideCapturedFlow: boolean },
+): void => {
+  if (!hasOwn(step, "observation")) return;
+
+  if (!context.insideCapturedFlow) {
+    issues.push({ path: `${stepPath}.observation`, message: "Step observations are only valid inside captured Flows" });
+  }
+
+  if (step.observation === null || step.observation === undefined) return;
+
+  if (step.anchor?.kind !== "fileRange") {
+    issues.push({ path: `${stepPath}.anchor`, message: "Observed Steps require a fileRange Anchor" });
+    return;
+  }
+
+  collectObservationAnchorIssues(issues, step.observation, step.anchor, stepPath);
+};
+
+const collectObservationAnchorIssues = (
+  issues: ValidationIssue[],
+  observation: CaptureObservation,
+  anchor: Extract<Anchor, { kind: "fileRange" }>,
+  stepPath: string,
+): void => {
+  const capturePoint = observation.capturePoint;
+  if (!capturePoint) return;
+
+  if (capturePoint.line < anchor.range.startLine || capturePoint.line > anchor.range.endLine) {
+    issues.push({
+      path: `${stepPath}.observation.capturePoint.line`,
+      message: "Observation capturePoint must be inside the Step fileRange Anchor",
+    });
+  }
 };
 
 const collectAnchorIssues = (issues: ValidationIssue[], anchor: Anchor, anchorPath: string): void => {
