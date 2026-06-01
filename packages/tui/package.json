@@ -1,5 +1,5 @@
 {
-  "name": "@tourguide/tui",
+  "name": "@elic/tui",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -17,8 +17,9 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@elic/schema": "workspace:*",
     "@opentui/solid": "^0.2.15",
-    "@tourguide/core": "workspace:*",
+    "@elic/core": "workspace:*",
     "solid-js": "^1.9.12"
   },
   "devDependencies": {

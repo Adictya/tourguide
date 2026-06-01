@@ -1,15 +1,15 @@
 # Execution Capture Reference
 
-This reference is for TourGuide agents that need runtime evidence to enrich a Tour. It is research/prototype guidance, not a v2 Tour schema.
+This reference is for ELIC agents that need runtime evidence to enrich an Explanation. It is research/prototype guidance, not a v2 Explanation schema.
 
 ## Boundary
 
 - An Execution Capture is recorded runtime evidence from an actual program execution.
-- Capture orchestration is external to TourGuide core for now.
+- Capture orchestration is external to ELIC core for now.
 - A capture skill or external tool may run DAP, OTel, log collection, or another capture mechanism.
-- TourGuide may ingest standard outputs from those tools and normalize them into inline Capture Observations on captured Tour Flows.
-- TourGuide should not need to own debugger launch details or source instrumentation workflows.
-- Do not put debugger commands, breakpoint requests, or expression capture instructions in v1 Tours.
+- ELIC may ingest standard outputs from those tools and normalize them into inline Capture Observations on captured Explanation Flows.
+- ELIC should not need to own debugger launch details or source instrumentation workflows.
+- Do not put debugger commands, breakpoint requests, or expression capture instructions in v1 Explanations.
 
 ## Current Decisions
 
@@ -18,22 +18,22 @@ This reference is for TourGuide agents that need runtime evidence to enrich a To
 - Default evidence selection: explicit expressions/variables only.
 - Full locals/object expansion is opt-in because debugger scopes can include secrets.
 - Captured data should be keyed by source location first: repo-relative path plus line/column/range.
-- Final Tour artifacts store normalized Capture Observations inline on captured Flows and Steps.
-- Captured Flows may persist `capture.input.path` to native DAP, OTel, or structured-log artifacts so `tourguide validate --hydrate` can refresh inline Observations.
+- Final Explanation artifacts store normalized Capture Observations inline on captured Flows and Steps.
+- Captured Flows may persist `capture.input.path` to native DAP, OTel, or structured-log artifacts so `elic validate --hydrate` can refresh inline Observations.
 - Missing referenced capture input files are mode-dependent: normal viewing can use inline Observations and lint warnings; hydration fails when it needs the missing input.
-- Commit policy is outside TourGuide and the capture skill; users decide whether capture files are committed or shared.
-- Final Tour JSON should contain sanitized normalized evidence only, not raw DAP protocol payloads, OTLP payloads, or raw logs.
-- Ingestion should be standards-driven where possible. Prefer consuming the native output format of DAP, OTel, structured logs, or other capture tools before inventing TourGuide-specific input formats.
+- Commit policy is outside ELIC and the capture skill; users decide whether capture files are committed or shared.
+- Final Explanation JSON should contain sanitized normalized evidence only, not raw DAP protocol payloads, OTLP payloads, or raw logs.
+- Ingestion should be standards-driven where possible. Prefer consuming the native output format of DAP, OTel, structured logs, or other capture tools before inventing ELIC-specific input formats.
 - Normalization should preserve non-sensitive evidence as losslessly as practical. Sensitive values must be replaced with placeholders when the source format marks them sensitive or when user/agent-provided redaction metadata identifies them.
 
 ## Current Contract Direction
 
-- Execution Capture is inline Tour evidence, not a reusable standalone TourGuide artifact.
+- Execution Capture is inline Explanation evidence, not a reusable standalone ELIC artifact.
 - A captured Flow owns one ordered runtime path.
 - The Flow stores `capture.origin` and, for CLI-origin captures, `capture.input.format` plus `capture.input.path`.
 - Observed Steps are Steps with an `observation` property. `observation: null` is a hydration placeholder.
-- `tourguide validate --hydrate` maps native capture points to observed Steps by order and overwrites inline Observation objects.
-- Steps without `observation` inside a captured Flow are explanatory-only.
+- `elic validate --hydrate` maps native capture points to observed Steps by order and overwrites inline Observation objects.
+- Steps without `observation` inside a captured Flow are non-observed Steps.
 - Trace-level capture detail uses `minDetailLevel: 4` on Steps, not a separate evidence navigation model.
 - A non-null Observation requires a `fileRange` Anchor. The Anchor is the display and semantic range; optional `observation.capturePoint` records the exact runtime line/column.
 - Observation evidence is function-centric: call stack, inputs, locals, outputs, and nullable error.
@@ -42,7 +42,7 @@ This reference is for TourGuide agents that need runtime evidence to enrich a To
 
 ## Proven DAP POC
 
-A throwaway POC was created under `/var/folders/vp/jrfm22z56fz0gd8_wnp569l00000gn/T/opencode/tourguide-dap-poc`.
+A throwaway POC was created under `/var/folders/vp/jrfm22z56fz0gd8_wnp569l00000gn/T/opencode/elic-dap-poc`.
 
 The POC verified:
 
@@ -68,15 +68,15 @@ Safety finding:
 
 ## Prototype Workflow
 
-1. Inspect the Tour or target code and identify source locations worth enriching.
+1. Inspect the Explanation or target code and identify source locations worth enriching.
 2. Choose explicit expressions to capture at each location.
 3. Run the target program under DAP without editing the target source.
 4. Set source breakpoints by repo-relative source file and line.
 5. Preserve the native capture output needed to understand what the capture mechanism actually produced.
 6. Author a captured Flow whose observed Steps correspond to selected capture points in order.
 7. Put `observation: null` on Steps that should be hydrated from native capture output.
-8. Ingest the native output into sanitized inline Capture Observations with `tourguide validate --hydrate`.
-9. Replace sensitive runtime values with placeholders before writing final Tour data; do not rely on commit policy to protect secrets.
+8. Ingest the native output into sanitized inline Capture Observations with `elic validate --hydrate`.
+9. Replace sensitive runtime values with placeholders before writing final Explanation data; do not rely on commit policy to protect secrets.
 10. Preserve `capture.input.path` for future rehydration, but render from inline Observations.
 
 ## Ingestion Direction
@@ -93,7 +93,7 @@ Safety finding:
 - If a sensitive value is conceptually important, preserve its role with a placeholder value.
 - Examples: `<redacted-token>`, `<placeholder-user-email>`, `<redacted-cookie>`, `<placeholder-api-key>`.
 - Prefer capturing non-sensitive derived values when they explain the runtime behavior just as well.
-- If full locals are captured for investigation, review and replace sensitive values before making the artifact readable by TourGuide.
+- If full locals are captured for investigation, review and replace sensitive values before making the artifact readable by ELIC.
 - Do not preserve raw DAP values in the final artifact just for debugging convenience.
 
 ## Historical Rough Captured Data Shape
@@ -128,7 +128,7 @@ This was early inspection output, not the current contract. Current normalized e
 
 ## Raw DAP Transcript POC
 
-Prototype files were written under `/var/folders/vp/jrfm22z56fz0gd8_wnp569l00000gn/T/opencode/tourguide-dap-poc`:
+Prototype files were written under `/var/folders/vp/jrfm22z56fz0gd8_wnp569l00000gn/T/opencode/elic-dap-poc`:
 
 - `dap-capture-poc.mjs`: launches the standalone `vscode-js-debug` DAP server, drives parent and nested target sessions, sets a TypeScript source breakpoint, captures evidence, and writes a raw DAP transcript.
 - `dap-transcript.raw.json`: message-level DAP transcript for the run.
@@ -160,13 +160,13 @@ The ingestor placeholder-substituted a sensitive-looking object preview, produci
 
 ## OTel Trace JSON POC
 
-A repository POC was added under `packages/core` to verify the OTel ingestion path without making the Tour v1 contract depend on OTel.
+A repository POC was added under `packages/core` to verify the OTel ingestion path without making the Explanation v1 contract depend on OTel.
 
 The POC verified:
 
 - The native capture artifact for OTel should be an OTLP JSON trace export: a JSON-encoded `ExportTraceServiceRequest` with top-level `resourceSpans[]`.
 - That artifact can come from an OTel Collector file exporter, an OTLP/HTTP JSON request body, or another exporter that preserves OTLP trace data as protobuf JSON.
-- TourGuide should import that native artifact and normalize it into inline Capture Observations before a captured Flow is considered hydrated.
+- ELIC should import that native artifact and normalize it into inline Capture Observations before a captured Flow is considered hydrated.
 - Stable OTel code semantic attributes can ground evidence: `code.file.path`, `code.line.number`, and `code.column.number`.
 - `code.file.path` may be absolute in native OTel output; the ingestor strips a known repo root and writes repo-relative POSIX paths in the normalized artifact.
 - Spans or span events without source-location attributes are skipped by default because they are not directly Anchor-ready.
@@ -191,7 +191,7 @@ Native OTel artifact shape:
       },
       "scopeSpans": [
         {
-          "scope": { "name": "tourguide-otel-poc", "version": "0.1.0" },
+          "scope": { "name": "elic-otel-poc", "version": "0.1.0" },
           "spans": [
             {
               "traceId": "5b8efff798038103d269b633813fc60c",
@@ -199,7 +199,7 @@ Native OTel artifact shape:
               "name": "computeQuote",
               "kind": 1,
               "attributes": [
-                { "key": "code.file.path", "value": { "stringValue": "/workspace/tourguide/src/sample.ts" } },
+                { "key": "code.file.path", "value": { "stringValue": "/workspace/elic/src/sample.ts" } },
                 { "key": "code.line.number", "value": { "intValue": "12" } },
                 { "key": "quote.total", "value": { "intValue": "28" } }
               ]
@@ -255,9 +255,9 @@ Observed legacy POC output shape:
 Important OTel finding:
 
 - OTel traces are good at preserving causal timing and service/scope/span identity, but source grounding is only available when instrumentation records code attributes on spans or span events.
-- A root HTTP/server span may explain the request path but is usually not enough for a TourGuide Anchor unless code attributes are attached.
+- A root HTTP/server span may explain the request path but is usually not enough for an ELIC Anchor unless code attributes are attached.
 - Span events are a useful capture point for specific source locations inside a broader span. They can carry their own `code.file.path` and `code.line.number` attributes while preserving the parent span identity.
-- The native artifact is already JSON when captured as OTLP/HTTP JSON or collector protobuf JSON. The TourGuide-facing evidence should be sanitized inline Capture Observations, not the raw OTLP payload.
+- The native artifact is already JSON when captured as OTLP/HTTP JSON or collector protobuf JSON. The ELIC-facing evidence should be sanitized inline Capture Observations, not the raw OTLP payload.
 
 ## Targeted Structured Log JSONL Direction
 
@@ -267,7 +267,7 @@ Each record must provide:
 
 - Source location, using `code.file.path` and `code.line.number` or their normalized equivalents.
 - `callStack.frames[]` with at least one frame.
-- Optional `values.inputs`, `values.locals`, `values.outputs`, and `values.error` using the captured value shape from the Tour contract.
+- Optional `values.inputs`, `values.locals`, `values.outputs`, and `values.error` using the captured value shape from the Explanation contract.
 
 Existing arbitrary logs may still inform authored evidence, but then the Flow uses `capture.origin: "authored"` and lint warns that values should be verified.
 

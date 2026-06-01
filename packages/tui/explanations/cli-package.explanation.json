@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "id": "550e8400-e29b-41d4-a716-446655440103",
+  "title": "CLI Package Overview",
+  "description": "Shows how the CLI package composes schema and core into the command-line surface.",
+  "createdAt": "2026-05-24T12:34:56.000Z",
+  "goal": "Maintain a compact package overview of the ELIC CLI layer.",
+  "topics": [
+    {
+      "title": "1. Package",
+      "items": [
+        {
+          "kind": "step",
+          "body": "`@elic/cli` is the command layer that loads Explanation JSON through core and formats schema validation issues for users.",
+          "anchor": {
+            "kind": "fileRange",
+            "path": "packages/cli/package.json",
+            "range": {
+              "startLine": 1,
+              "endLine": 32
+            }
+          }
+        },
+        {
+          "kind": "step",
+          "body": "The active command surface is named `elic`, matching the product namespace used in docs and authored artifacts.",
+          "anchor": {
+            "kind": "fileRange",
+            "path": "packages/cli/src/index.ts",
+            "range": {
+              "startLine": 1,
+              "endLine": 74
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

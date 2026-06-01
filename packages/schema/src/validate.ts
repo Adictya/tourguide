@@ -2,61 +2,56 @@ import * as Schema from "@effect/schema/Schema";
 import { Effect } from "effect";
 
 import {
-  TourJsonParseError,
-  TourSchemaError,
-  TourSemanticError,
-  type TourValidationError,
+  ExplanationJsonParseError,
+  ExplanationSchemaError,
+  ExplanationSemanticError,
+  type ExplanationValidationError,
   type ValidationIssue,
 } from "./errors.js";
-import {
-  isLanguageId,
-  type Anchor,
-  type CaptureObservation,
-  type DiffHunk,
-  type Step,
-  type Tour,
-  TourSchema,
-} from "./schema.js";
+import { type Anchor, type DiffHunk } from "./anchors.js";
+import type { CaptureObservation } from "./capture.js";
+import { ExplanationSchema, type Explanation, type Step } from "./explanation.js";
+import { isLanguageId } from "./primitives.js";
 
-const decodeTour = Schema.decodeUnknown(TourSchema, {
+const decodeExplanation = Schema.decodeUnknown(ExplanationSchema, {
   errors: "all",
   onExcessProperty: "error",
 });
 
-export const parseTourJson = (json: string): Effect.Effect<Tour, TourValidationError> =>
+export const parseExplanationJson = (json: string): Effect.Effect<Explanation, ExplanationValidationError> =>
   Effect.try({
     try: () => JSON.parse(json) as unknown,
     catch: (cause) =>
-      new TourJsonParseError({
+      new ExplanationJsonParseError({
         message: cause instanceof Error ? cause.message : "Invalid JSON",
         cause,
       }),
-  }).pipe(Effect.flatMap(parseTour));
+  }).pipe(Effect.flatMap(parseExplanation));
 
-export const parseTour = (input: unknown): Effect.Effect<Tour, TourValidationError> =>
-  decodeTour(input).pipe(
+export const parseExplanation = (input: unknown): Effect.Effect<Explanation, ExplanationValidationError> =>
+  decodeExplanation(input).pipe(
     Effect.mapError(
       (cause) =>
-        new TourSchemaError({
-          message: "Tour does not match the v1 schema",
+        new ExplanationSchemaError({
+          message: "Explanation does not match the v1 schema",
           cause,
         }),
     ),
-    Effect.flatMap(validateTourSemantics),
+    Effect.flatMap(validateExplanationSemantics),
   );
 
-export const validateTour = parseTour;
+export const validateExplanation = parseExplanation;
 
-const validateTourSemantics = (tour: Tour): Effect.Effect<Tour, TourSemanticError> => {
-  const issues = collectTourIssues(tour);
-  return issues.length > 0 ? Effect.fail(new TourSemanticError({ issues })) : Effect.succeed(tour);
+const validateExplanationSemantics = (explanation: Explanation): Effect.Effect<Explanation, ExplanationSemanticError> => {
+  const issues = collectExplanationIssues(explanation);
+  return issues.length > 0 ? Effect.fail(new ExplanationSemanticError({ issues })) : Effect.succeed(explanation);
 };
 
-const collectTourIssues = (tour: Tour): ValidationIssue[] => {
+const collectExplanationIssues = (explanation: Explanation): ValidationIssue[] => {
   const issues: ValidationIssue[] = [];
   const slugs = new Map<string, string>();
 
-  for (const [topicIndex, topic] of tour.topics.entries()) {
+  for (const [topicIndex, topic] of explanation.topics.entries()) {
     addUniqueSlug(issues, slugs, slugify(topic.title), `$.topics[${topicIndex}].title`, "Topic");
 
     for (const [itemIndex, item] of topic.items.entries()) {
@@ -65,7 +60,7 @@ const collectTourIssues = (tour: Tour): ValidationIssue[] => {
     }
   }
 
-  for (const [topicIndex, topic] of tour.topics.entries()) {
+  for (const [topicIndex, topic] of explanation.topics.entries()) {
     for (const [itemIndex, item] of topic.items.entries()) {
       const itemPath = `$.topics[${topicIndex}].items[${itemIndex}]`;
       if (item.kind === "step") {
@@ -212,8 +207,13 @@ const collectMarkdownIssues = (
   }
 
   for (const target of collectInternalLinkTargets(withoutFences)) {
-    if (!slugs.has(target)) {
-      issues.push({ path, message: `Broken internal link target: #${target}` });
+    if (target.kind === "malformed") {
+      issues.push({ path, message: `Malformed internal link target: ${target.href}` });
+      continue;
+    }
+
+    if (!slugs.has(target.slug)) {
+      issues.push({ path, message: `Broken internal link target: #${target.slug}` });
     }
   }
 };
@@ -231,13 +231,28 @@ const collectFenceIssues = (issues: ValidationIssue[], markdown: string, path: s
 
 const markdownLinkPattern = /(?<!!)\[[^\]]+\]\((#[^)]+)\)/g;
 
-const collectInternalLinkTargets = (markdown: string): string[] => {
-  const targets: string[] = [];
+type InternalLinkTarget =
+  | { readonly kind: "slug"; readonly slug: string }
+  | { readonly kind: "malformed"; readonly href: string };
+
+const collectInternalLinkTargets = (markdown: string): InternalLinkTarget[] => {
+  const targets: InternalLinkTarget[] = [];
   for (const match of markdown.matchAll(markdownLinkPattern)) {
     const href = match[1];
-    if (href) targets.push(decodeURIComponent(href.slice(1).trim()));
+    if (!href) continue;
+
+    const target = decodeInternalLinkTarget(href);
+    targets.push(target === undefined ? { kind: "malformed", href } : { kind: "slug", slug: target });
   }
   return targets;
+};
+
+const decodeInternalLinkTarget = (href: string): string | undefined => {
+  try {
+    return decodeURIComponent(href.slice(1).trim());
+  } catch {
+    return undefined;
+  }
 };
 
 const slugify = (value: string): string => {

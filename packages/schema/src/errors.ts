@@ -7,29 +7,29 @@ export type ValidationIssue = {
   message: string;
 };
 
-export class TourJsonParseError extends Data.TaggedError("TourJsonParseError")<{
+export class ExplanationJsonParseError extends Data.TaggedError("ExplanationJsonParseError")<{
   message: string;
   cause: unknown;
 }> {}
 
-export class TourSchemaError extends Data.TaggedError("TourSchemaError")<{
+export class ExplanationSchemaError extends Data.TaggedError("ExplanationSchemaError")<{
   message: string;
   cause: ParseResult.ParseError;
 }> {}
 
-export class TourSemanticError extends Data.TaggedError("TourSemanticError")<{
+export class ExplanationSemanticError extends Data.TaggedError("ExplanationSemanticError")<{
   issues: readonly ValidationIssue[];
 }> {}
 
-export type TourValidationError = TourJsonParseError | TourSchemaError | TourSemanticError;
+export type ExplanationValidationError = ExplanationJsonParseError | ExplanationSchemaError | ExplanationSemanticError;
 
-export const formatTourValidationIssues = (
-  error: TourValidationError,
+export const formatExplanationValidationIssues = (
+  error: ExplanationValidationError,
 ): Effect.Effect<readonly ValidationIssue[]> => {
   switch (error._tag) {
-    case "TourJsonParseError":
+    case "ExplanationJsonParseError":
       return Effect.succeed([{ path: "$", message: error.message }]);
-    case "TourSchemaError":
+    case "ExplanationSchemaError":
       return ArrayFormatter.formatError(error.cause).pipe(
         Effect.map((issues) =>
           issues.map((issue) => ({
@@ -38,13 +38,13 @@ export const formatTourValidationIssues = (
           })),
         ),
       );
-    case "TourSemanticError":
+    case "ExplanationSemanticError":
       return Effect.succeed(error.issues);
   }
 };
 
-export const formatTourValidationError = (error: TourValidationError): Effect.Effect<string> =>
-  Effect.map(formatTourValidationIssues(error), (issues) =>
+export const formatExplanationValidationError = (error: ExplanationValidationError): Effect.Effect<string> =>
+  Effect.map(formatExplanationValidationIssues(error), (issues) =>
     issues.map((issue) => `${issue.path}: ${issue.message}`).join("\n"),
   );
 

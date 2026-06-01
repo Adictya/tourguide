@@ -1,33 +1,33 @@
 ---
-name: tourguide
-description: Create strict JSON TourGuide v1 Tour artifacts for guided architecture, code path, PR, implementation-summary, and static debug-flow explanations. Use this skill when the user asks for a guided walkthrough, code tour, architecture explanation, PR explanation, implementation explanation, or debug diagnosis that should be viewable with TourGuide.
+name: elic
+description: Create strict JSON ELIC v1 Explanation artifacts for guided architecture, code path, PR, implementation-summary, and static debug-flow explanations. Use this skill when the user asks for an ELIC explanation, architecture explanation, PR explanation, implementation explanation, or debug diagnosis that should be viewable with ELIC.
 metadata:
   author: adictya
   version: "0.2"
 ---
 
-# TourGuide JSON Authoring Skill
+# ELIC JSON Authoring Skill
 
 ## Purpose
 
-TourGuide Tours are strict JSON artifacts rendered by TourGuide Presentation Surfaces. Your job is to inspect the target repository, create a grounded authored Tour artifact, hydrate and validate it with the CLI, and tell the user how to open it.
+ELIC Explanations are strict JSON artifacts rendered by ELIC Presentation Surfaces. Your job is to inspect the target repository, create a grounded authored Explanation artifact, hydrate and validate it with the CLI, and tell the user how to open it.
 
-Use `CONTEXT.md` for language and `docs/tour-v1-contract.md` for the v1 artifact contract. If implementation and docs disagree, follow the contract docs unless the user explicitly asks to work with legacy scaffold code.
+Use `CONTEXT.md` for language and `docs/explanation-v1-contract.md` for the v1 artifact contract. If implementation and docs disagree, follow the contract docs unless the user explicitly asks to work with legacy scaffold code.
 
 ## Workflow
 
-1. Inspect the target codebase before writing the Tour.
-2. Decide whether the Tour is ephemeral or durable. Include `goal` only when future LLM revision/maintenance is useful.
-3. Create `.tourguide/tours/<short-human-slug>.tour.json` in the target repository.
+1. Inspect the target codebase before writing the Explanation.
+2. Decide whether the Explanation is ephemeral or durable. Include `goal` only when future LLM revision/maintenance is useful.
+3. Create `.elic/explanations/<short-human-slug>.explanation.json` in the target repository.
 4. Write strict JSON using `schemaVersion: 1` and the v1 authored shape.
 5. Use exact repo-relative POSIX paths and inclusive line ranges after reading files.
-6. Split multi-location explanations into adjacent Steps, usually inside a Flow.
-7. Run `tourguide validate --hydrate .tourguide/tours/<short-human-slug>.tour.json`.
+6. Split multi-location material into adjacent Steps, usually inside a Flow.
+7. Run `elic validate --hydrate .elic/explanations/<short-human-slug>.explanation.json`.
 8. If hydration or validation fails, fix authored semantic fields and rerun validation.
-9. Optionally run `tourguide validate --hydrate --lint .tourguide/tours/<short-human-slug>.tour.json` for quality warnings.
-10. Tell the user how to open it with `tourguide view .tourguide/tours/<short-human-slug>.tour.json`.
+9. Optionally run `elic validate --hydrate --lint .elic/explanations/<short-human-slug>.explanation.json` for quality warnings.
+10. Tell the user how to open it with `elic view .elic/explanations/<short-human-slug>.explanation.json`.
 
-For runtime evidence work, see [Execution Capture Reference](EXECUTION-CAPTURE.md). Treat it as prototype guidance only; do not add capture instructions to v1 Tours.
+For runtime evidence work, see [Execution Capture Reference](../../docs/EXECUTION-CAPTURE.md). Treat it as prototype guidance only; do not add capture instructions to v1 Explanations.
 
 ## Authored Artifact Shape
 
@@ -37,8 +37,8 @@ This is the minimal authored shape. The CLI hydrates generated file evidence fie
 {
   "schemaVersion": 1,
   "id": "550e8400-e29b-41d4-a716-446655440000",
-  "title": "Tour Title",
-  "description": "Concise user-facing summary of what this Tour contains.",
+  "title": "Explanation Title",
+  "description": "Concise user-facing summary of what this Explanation contains.",
   "createdAt": "2026-05-24T12:34:56.000Z",
   "defaultDetailLevel": 3,
   "topics": [
@@ -47,7 +47,7 @@ This is the minimal authored shape. The CLI hydrates generated file evidence fie
       "items": [
         {
           "kind": "step",
-          "body": "Markdown explanation for one conceptual move.",
+          "body": "Markdown Step body for one conceptual move.",
           "anchor": {
             "kind": "fileRange",
             "path": "src/example.ts",
@@ -96,15 +96,15 @@ This is the minimal authored shape. The CLI hydrates generated file evidence fie
 ## Authoring Rules
 
 - Write strict JSON, not JSONC, YAML, Lua, or Markdown-only output.
-- Use `.tour.json` filenames under `.tourguide/tours/`.
+- Use `.explanation.json` filenames under `.elic/explanations/`.
 - Use a UUID for `id`; prefer CLI/scaffold/tool generation when available.
 - Use ISO 8601 for `createdAt`; preserve it during revisions.
 - Use `description` for user-facing contents summary.
-- Use `goal` only for durable Tours that may need future LLM refresh.
-- Use `defaultDetailLevel` only when the Tour should recommend a starting level other than the default Deep Dive value of `3`.
+- Use `goal` only for durable Explanations that may need future LLM refresh.
+- Use `defaultDetailLevel` only when the Explanation should recommend a starting level other than the default Deep Dive value of `3`.
 - Use `minDetailLevel` on Steps or Flows when content should appear only at Explore or Deep Dive.
 - Keep Topic and Flow titles plain text.
-- Put all explanatory text in Step `body`; Topics and Flows do not have Markdown bodies.
+- Put all prose in Step `body`; Topics and Flows do not have Markdown bodies.
 - Do not write Step titles.
 - Do not write `presentation` fields.
 - Do not write `anchors[]`; a Step has at most one `anchor`.
@@ -141,16 +141,16 @@ This is the minimal authored shape. The CLI hydrates generated file evidence fie
 - A Flow must contain at least two Steps.
 - A Flow cannot contain another Flow.
 - Step remains the unit of next/previous navigation.
-- Do not encode pairing/window layout in the Tour. Presentation Surfaces decide how adjacent Flow Steps are shown together.
-- If an explanation branches, use multiple Flows rather than making a Flow graph.
+- Do not encode pairing/window layout in the Explanation. Presentation Surfaces decide how adjacent Flow Steps are shown together.
+- If the path branches, use multiple Flows rather than making a Flow graph.
 
 ## Quality Bar
 
-- The Tour must make sense with only next/previous Step navigation and Topic-level navigation.
+- The Explanation must make sense with only next/previous Step navigation and Topic-level navigation.
 - Each Step should advance one conceptual move.
 - Every concrete Step should point at real code, a real diff hunk, or selected embedded evidence.
 - Anchorless Steps are allowed for mental models, transitions, or summaries, but should not become a long essay.
 - Do not invent file paths, line ranges, diff hunks, symbols, or APIs.
 - Do not embed whole files by default.
-- Prefer one coherent Tour over many tiny Tours, but split when the guided explanation becomes too broad.
-- If the Tour is ephemeral, omit `goal`; if it is meant to be maintained, include a concise LLM-facing `goal`.
+- Prefer one coherent Explanation over many tiny Explanations, but split when the material becomes too broad.
+- If the Explanation is ephemeral, omit `goal`; if it is meant to be maintained, include a concise LLM-facing `goal`.

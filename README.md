@@ -1,24 +1,24 @@
-# TourGuide
+# ELIC
 
-TourGuide is a TypeScript-first workspace for authored guided explanations generated or maintained by AI agents and presented on local surfaces.
+ELIC (Explain Like I Code) is a TypeScript-first workspace for authored Explanations generated or maintained by AI agents and presented on local surfaces.
 
-The canonical artifact is a strict JSON Tour. A Tour organizes one explanation into Topics, optional Flows, ordered Steps, and grounded Anchors. Tour Sessions are presented on Active Surfaces: terminal first and OpenCode next.
+The canonical artifact is a strict JSON Explanation. An Explanation organizes Topics, optional Flows, ordered Steps, and grounded Anchors. Explanation Sessions are presented on Active Surfaces: terminal first and OpenCode next.
 
 ## Contract
 
 - `CONTEXT.md` defines the project language.
-- `docs/tour-v1-contract.md` defines the draft v1 JSON artifact, authoring, validation, hydration, and Presentation Surface contract.
-- Canonical authored Tours live under `.tourguide/tours/*.tour.json`.
-- Neovim is preserved only as a legacy adapter direction and does not define the v1 Tour contract.
+- `docs/explanation-v1-contract.md` defines the draft v1 JSON artifact, authoring, validation, hydration, and Presentation Surface contract.
+- Canonical authored Explanations live under `.elic/explanations/*.explanation.json`.
+- Neovim is preserved only as a legacy adapter direction and does not define the v1 Explanation contract.
 
 ## Packages
 
-- `packages/schema` owns the v1 Tour contract and Effect Schema validation/parsing helpers.
-- `packages/core` owns normalization/session-model scaffolding. It is expected to be rewritten around Topics, Flows, Steps, Detail Levels, and single Anchors.
+- `packages/schema` owns the v1 Explanation contract and Effect Schema validation/parsing helpers.
+- `packages/core` owns Explanation loading and core artifact helpers. Presentation Surfaces should not force alternate artifact shapes back into core.
 - `packages/tui` contains the terminal visual direction. The UI vibe is retained; its current data model is not authoritative.
-- `packages/cli` provides the `tourguide` command surface and should grow validation, hydration, strip, and view workflows from the v1 contract.
+- `packages/cli` provides the command surface and should grow `elic` validation, hydration, strip, and view workflows from the v1 contract.
 - `packages/tourguide.nvim` is historical legacy adapter code.
-- `skills/tourguide` contains the JSON-authoring skill contract for agents.
+- `skills/elic` contains the JSON-authoring skill contract for agents.
 
 ## Commands
 
@@ -33,11 +33,11 @@ bun run test
 Target v1 authoring flow:
 
 ```sh
-tourguide validate --hydrate .tourguide/tours/<name>.tour.json
-tourguide validate --lint .tourguide/tours/<name>.tour.json
-tourguide view .tourguide/tours/<name>.tour.json
+elic validate --hydrate .elic/explanations/<name>.explanation.json
+elic validate --lint .elic/explanations/<name>.explanation.json
+elic view .elic/explanations/<name>.explanation.json
 ```
 
 ## Current Status
 
-This is an early scaffold in transition. Existing schema, core, CLI, fixtures, and authoring examples may not match the v1 contract yet. Treat `docs/tour-v1-contract.md` and `CONTEXT.md` as the source of truth while the implementation is rebuilt.
+This is an early scaffold in transition. Existing schema, core, CLI, fixtures, and authoring examples may not match the v1 contract yet. Treat `docs/explanation-v1-contract.md` and `CONTEXT.md` as the source of truth while the implementation is rebuilt.

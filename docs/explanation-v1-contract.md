@@ -1,6 +1,6 @@
-# Tour v1 Contract Draft
+# Explanation v1 Contract Draft
 
-This document captures the current Tour v1 artifact, authoring, validation, hydration, and Presentation Surface contract. `CONTEXT.md` remains the glossary; this file is the working product/specification contract.
+This document captures the current Explanation v1 artifact, authoring, validation, hydration, and Presentation Surface contract. `CONTEXT.md` remains the glossary; this file is the working product/specification contract.
 
 ## Status
 
@@ -8,13 +8,13 @@ This is a draft based on accepted domain decisions. Existing schema, core, CLI, 
 
 ## Core Model
 
-A Tour is a strict JSON artifact. It is not a Tour Session, a rendered screen, or a Presentation Surface.
+An Explanation is a strict JSON artifact. It is not an Explanation Session, a rendered screen, or a Presentation Surface.
 
-The canonical authored location is `.tourguide/tours/<human-slug>.tour.json`.
+The canonical authored location is `.elic/explanations/<human-slug>.explanation.json`.
 
-CLI commands may accept any explicit path. Default discovery should prefer `.tourguide/tours/*.tour.json`.
+CLI commands may accept any explicit path. Default discovery should prefer `.elic/explanations/*.explanation.json`.
 
-Tour files must use strict JSON, not JSONC, YAML, Lua, or Markdown-only output.
+Explanation files must use strict JSON, not JSONC, YAML, Lua, or Markdown-only output.
 
 ## Top-Level Fields
 
@@ -23,13 +23,13 @@ Required fields:
 - `schemaVersion`: numeric artifact schema version. v1 uses `1`.
 - `id`: generated stable UUID string for machine/server identity.
 - `title`: plain-text title.
-- `description`: concise user-facing summary of what the Tour contains.
-- `createdAt`: ISO 8601 date-time for when the Tour artifact was first created.
+- `description`: concise user-facing summary of what the Explanation contains.
+- `createdAt`: ISO 8601 date-time for when the Explanation artifact was first created.
 - `topics`: non-empty array of Topics.
 
 Optional fields:
 
-- `goal`: LLM-facing maintenance/revision intent. Omit for ephemeral one-off Tours.
+- `goal`: LLM-facing maintenance/revision intent. Omit for ephemeral one-off Explanations.
 - `defaultDetailLevel`: numeric recommended starting Detail Level. Allowed values are `1`, `2`, `3`, `4`. If omitted, default is `3`.
 - `repo`: repository context, required in hydrated output when any `fileRange` Anchor exists.
 
@@ -48,7 +48,7 @@ Detail Levels are additive.
 - `3`: Deep Dive.
 - `4`: Trace.
 
-Tour content may use `minDetailLevel` on Steps and Flows. If omitted, `minDetailLevel` defaults to `1`.
+Explanation content may use `minDetailLevel` on Steps and Flows. If omitted, `minDetailLevel` defaults to `1`.
 
 Rules:
 
@@ -57,14 +57,14 @@ Rules:
 - Topics do not have `minDetailLevel`.
 - Anchors do not have `minDetailLevel`.
 - Trace is for low-level ordered Capture Observations inside captured Flows. Trace is not another name for an Execution Capture artifact or an OTel trace.
-- A Tour Session owns the active Detail Level.
-- Changing active Detail Level never mutates the Tour artifact.
+- An Explanation Session owns the active Detail Level.
+- Changing active Detail Level never mutates the Explanation artifact.
 - Topic navigation skips Topics with no included Steps after Detail Level filtering.
-- If a Flow has fewer than two included Steps after filtering, its grouping dissolves for that Tour Session. One remaining Step is presented as a normal Step; zero remaining Steps are skipped.
+- If a Flow has fewer than two included Steps after filtering, its grouping dissolves for that Explanation Session. One remaining Step is presented as a normal Step; zero remaining Steps are skipped.
 
 ## Structure
 
-A Tour contains Topics. A Topic contains an ordered mixed list of standalone Steps and Flows. A Flow contains ordered Steps only.
+An Explanation contains Topics. A Topic contains an ordered mixed list of standalone Steps and Flows. A Flow contains ordered Steps only.
 
 ### Topic
 
@@ -77,7 +77,7 @@ Topic rules:
 
 - No Topic `body`.
 - Topic titles are the higher-order navigation labels.
-- Topic title slugs must be globally unique in the Tour for internal links.
+- Topic title slugs must be globally unique in the Explanation for internal links.
 
 ### Flow
 
@@ -90,23 +90,23 @@ Required fields:
 Optional fields:
 
 - `minDetailLevel`: `1`, `2`, `3`, or `4`; default `1`.
-- `capture`: captured Flow metadata when the Flow explains one ordered runtime path.
+- `capture`: captured Flow metadata when the Flow presents one ordered runtime path.
 
 Flow rules:
 
 - No Flow `body`.
 - No nested Flows.
-- Flow title slugs must be globally unique in the Tour for internal links.
+- Flow title slugs must be globally unique in the Explanation for internal links.
 - Step remains the unit of next/previous navigation.
 - Flow is not a formal higher-order navigation target.
 - Flow presentation requires adjacent Step relationships to be visible together, but not necessarily every Step in the Flow at once.
 - Branching call graphs should be represented as multiple linear Flows, with repeated Anchor targets when a callsite is revisited for a different branch.
-- A Flow with `capture` contains ordered Steps for a captured runtime path. Steps with an `observation` property consume raw capture points in order during hydration; Steps without `observation` are explanatory-only.
-- Low-level capture points that are not part of the normal explanation should remain in the Flow as Trace-level Steps using `minDetailLevel: 4`, not be omitted from the captured path.
+- A Flow with `capture` contains ordered Steps for a captured runtime path. Steps with an `observation` property consume raw capture points in order during hydration; Steps without `observation` are non-observed Steps.
+- Low-level capture points that are not part of the main path should remain in the Flow as Trace-level Steps using `minDetailLevel: 4`, not be omitted from the captured path.
 
 ### Flow Capture
 
-Flow `capture` is inline Tour evidence metadata, not a separate artifact reference.
+Flow `capture` is inline Explanation evidence metadata, not a separate artifact reference.
 
 Allowed shapes:
 
@@ -115,7 +115,7 @@ Allowed shapes:
   "origin": "cli",
   "input": {
     "format": "dap-transcript",
-    "path": ".tourguide/captures/signup.raw.json"
+    "path": ".elic/captures/signup.raw.json"
   }
 }
 ```
@@ -135,7 +135,7 @@ Fields:
 
 Capture rules:
 
-- `origin: "cli"` means inline Observations are generated or refreshed by `tourguide validate --hydrate` from `capture.input`.
+- `origin: "cli"` means inline Observations are generated or refreshed by `elic validate --hydrate` from `capture.input`.
 - `origin: "authored"` means inline Observations were added directly by an LLM or author. Lint warns because values should be verified.
 - `capture.input.path` persists after hydration so capture evidence can be refreshed later.
 - Presentation Surfaces must render from inline Observations and must not require `capture.input.path` to exist.
@@ -146,7 +146,7 @@ Capture rules:
 Required fields:
 
 - `kind`: `step`.
-- `body`: non-empty Markdown explanation.
+- `body`: non-empty Markdown Step body.
 
 Optional fields:
 
@@ -164,10 +164,10 @@ Step rules:
 - A concrete claim about code should normally have an Anchor.
 - The same Anchor target may appear in multiple Steps when the same evidence supports different conceptual moves.
 - A Step with an `observation` property is an observed Step. `observation: null` marks a draft hydration placeholder.
-- `tourguide validate --hydrate` overwrites existing Observation objects and fills `null` placeholders by raw capture point order.
+- `elic validate --hydrate` overwrites existing Observation objects and fills `null` placeholders by raw capture point order.
 - Final readiness validation rejects remaining `observation: null` values.
 - A Step with a non-null Observation must have a `fileRange` Anchor. The Anchor is the display and semantic source range for the Observation.
-- A Trace-level captured Step still requires `body`, but the body may be a terse generated explanation because the Observation carries the low-level runtime evidence.
+- A Trace-level captured Step still requires `body`, but the body may be terse generated prose because the Observation carries the low-level runtime evidence.
 
 ### Capture Observation
 
@@ -230,7 +230,7 @@ Value rules:
 
 - `value` must be sanitized JSON suitable for display.
 - Sensitive values must be replaced with placeholders and marked with `redacted: true`.
-- Raw secrets, tokens, passwords, cookies, authorization headers, private keys, and customer data must not appear in final Tour JSON.
+- Raw secrets, tokens, passwords, cookies, authorization headers, private keys, and customer data must not appear in final Explanation JSON.
 
 Error Observation shape:
 
@@ -251,7 +251,7 @@ Error rules:
 
 ## Anchors
 
-A Step has zero or one Anchor. An Anchor identifies grounded evidence; explanation belongs in the Step body.
+A Step has zero or one Anchor. An Anchor identifies grounded evidence; prose belongs in the Step body.
 
 Removed from v1 Anchors:
 
@@ -338,7 +338,7 @@ Optional fields:
 
 diffHunk rules:
 
-- Diff display mode is a Presentation Surface or user preference, not Tour data.
+- Diff display mode is a Presentation Surface or user preference, not Explanation data.
 - No `language`; diff is implied by the Anchor kind.
 - No `focus`; use a smaller hunk or another Step.
 - Hunk line metadata is optional, but if present it must validate against the header.
@@ -374,17 +374,17 @@ If `repo` exists, v1 requires:
 
 Optional repo fields:
 
-- `rootHint`: human-readable hint for where the Tour expects to be opened.
+- `rootHint`: human-readable hint for where the Explanation expects to be opened.
 - `remoteUrl`: optional remote identity; do not require it because it may be absent or sensitive.
-- `baseRef`: optional revision context for PR or implementation-summary Tours.
-- `headRef`: optional revision context for PR or implementation-summary Tours.
+- `baseRef`: optional revision context for PR or implementation-summary Explanations.
+- `headRef`: optional revision context for PR or implementation-summary Explanations.
 
 Hydration rules:
 
-- Authored Tours may omit `repo`.
+- Authored Explanations may omit `repo`.
 - If any `fileRange` Anchor exists, hydrated output has `repo.vcs` and `repo.commit`.
 - If `repo.commit` is missing, hydration sets it to the current Git `HEAD`.
-- If `repo.commit` already exists, default hydration does not silently rebase the Tour to a new commit.
+- If `repo.commit` already exists, default hydration does not silently rebase the Explanation to a new commit.
 
 ## Markdown
 
@@ -419,7 +419,7 @@ Link rules:
 - Internal links do not target Steps in v1 because Steps have no titles or IDs.
 - Topic links use derived `topic` slugs.
 - Flow links use derived `flow` slugs.
-- Topic and Flow slugs must be globally unique in the Tour.
+- Topic and Flow slugs must be globally unique in the Explanation.
 - Validation must reject broken internal Topic/Flow links.
 
 ## Language IDs
@@ -449,7 +449,7 @@ These IDs apply to embedded excerpts, generated snapshots, and fenced code block
 
 ## Authored and Hydrated Shapes
 
-Authored and hydrated Tours are both Tours. They are not separate domain concepts and no lifecycle state is embedded in the artifact.
+Authored and hydrated Explanations are both Explanations. They are not separate domain concepts and no lifecycle state is embedded in the artifact.
 
 Authored shape:
 
@@ -475,14 +475,14 @@ Generated fields remain inline on Anchors. They are not grouped under a `generat
 
 ## Validation and Hydration
 
-`tourguide validate <tour>` is read-only and means the Tour can be presented correctly on the current machine.
+`elic validate <explanation>` is read-only and means the Explanation can be presented correctly on the current machine.
 
 Validation behavior:
 
 - Always validate JSON structure.
 - Always validate Markdown restrictions.
 - Always validate internal links.
-- Validate only external dependencies the Tour actually uses.
+- Validate only external dependencies the Explanation actually uses.
 - If no `fileRange` Anchors exist, Git validation is not required.
 - `diffHunk` and `embeddedExcerpt` Anchors can validate without Git because they embed their evidence.
 - `fileRange` Anchors require enough available evidence to present correctly.
@@ -494,7 +494,7 @@ fileRange presentation resolution order:
 - Otherwise use generated `snapshot` when available.
 - Otherwise validation/view fails.
 
-`tourguide validate --hydrate <tour>` is mutating.
+`elic validate --hydrate <explanation>` is mutating.
 
 Hydration behavior:
 
@@ -503,7 +503,7 @@ Hydration behavior:
 - Reads each `capture.input.path` according to `capture.input.format`.
 - Maps raw capture points to observed Steps by order. Observed Steps are Steps with an `observation` property, whether the value is `null` or an existing Observation object.
 - Overwrites existing Observation objects during rehydration.
-- Leaves Steps without an `observation` property unchanged as explanatory-only Steps.
+- Leaves Steps without an `observation` property unchanged as non-observed Steps.
 - Fails `validate --hydrate` when the raw capture point count does not match the observed Step count for a captured Flow.
 - Fills generated repo context when needed.
 - Infers and writes `fileRange.source` per Anchor.
@@ -518,8 +518,8 @@ Hydration behavior:
 Capture input requirements:
 
 - `dap-transcript` input must provide selected capture points with source location, stopped stack frames, and targeted values from debugger evaluation or variables data. Full locals are not required and should remain opt-in.
-- `otlp-json-traces` input must be OTLP JSON trace data with top-level `resourceSpans[]`. Hydrated spans or span events must provide `code.file.path` and `code.line.number`. Targeted values must use role prefixes such as `tourguide.input.email`, `tourguide.local.normalizedEmail`, and `tourguide.output.result`. Parent span chains may be synthesized into `callStack.frames`.
-- `structured-log-jsonl` input must contain one JSON object per targeted observation candidate. Each record must provide source location, `callStack.frames[]`, and optional `values.inputs`, `values.locals`, `values.outputs`, and `values.error` data using the TourGuide captured value shape.
+- `otlp-json-traces` input must be OTLP JSON trace data with top-level `resourceSpans[]`. Hydrated spans or span events must provide `code.file.path` and `code.line.number`. Targeted values must use role prefixes such as `elic.input.email`, `elic.local.normalizedEmail`, and `elic.output.result`. Parent span chains may be synthesized into `callStack.frames`.
+- `structured-log-jsonl` input must contain one JSON object per targeted observation candidate. Each record must provide source location, `callStack.frames[]`, and optional `values.inputs`, `values.locals`, `values.outputs`, and `values.error` data using the ELIC captured value shape.
 
 Capture validation rules:
 
@@ -547,7 +547,7 @@ Strip behavior:
 Lint behavior:
 
 - Lint is a validation flag, not a separate command.
-- `tourguide validate --lint <tour>` reports quality warnings after readiness checks.
+- `elic validate --lint <explanation>` reports quality warnings after readiness checks.
 - Missing `goal` is a lint warning only, never a validation error.
 - More than three consecutive anchorless Steps may be a lint warning.
 - Captured Flows with `origin: "authored"` produce a warning that runtime values were authored and should be verified.
@@ -561,9 +561,9 @@ Active Surfaces are terminal and OpenCode.
 
 Minimum Active Surface capabilities:
 
-- Open a Tour.
-- Show Tour title and description.
-- Maintain Tour Session state outside the Tour artifact.
+- Open an Explanation.
+- Show Explanation title and description.
+- Maintain Explanation Session state outside the Explanation artifact.
 - Navigate Steps with next/previous.
 - Navigate Topics with next/previous Topic.
 - Support active Detail Level.
@@ -573,7 +573,7 @@ Minimum Active Surface capabilities:
 - Present `diffHunk` Anchors.
 - Present `embeddedExcerpt` Anchors.
 - When the active Step is inside a Flow, show adjacent Flow Step context together so paired evidence can be compared or traced.
-- Keep Flow windowing or pairing behavior as Presentation Surface/session behavior, not Tour artifact data.
+- Keep Flow windowing or pairing behavior as Presentation Surface/session behavior, not Explanation artifact data.
 - Render Capture Observations on captured Steps.
 - Show `inputs`, `outputs`, and selected `locals` inline near the active Step Anchor when space and surface capabilities allow.
 - Show full `inputs`, `locals`, `outputs`, and `error` details in an evidence details area.
@@ -587,7 +587,7 @@ Not required as shared v1 capabilities:
 - Flow jump navigation.
 - LSP or symbol resolution.
 - Web sharing.
-- Editing Tours inside the surface.
+- Editing Explanations inside the surface.
 
 Candidate Surface:
 
@@ -595,21 +595,21 @@ Candidate Surface:
 
 Legacy Adapter:
 
-- Neovim may remain historical code, but does not define the v1 Tour contract.
+- Neovim may remain historical code, but does not define the v1 Explanation contract.
 
 ## Authoring Workflow
 
 Recommended agent workflow:
 
-- Inspect the target repository before writing the Tour.
+- Inspect the target repository before writing the Explanation.
 - When a concrete runtime path is needed, run or request DAP, targeted OTel, or targeted structured-log capture before finalizing the captured Flow.
-- Use capture-first hydration for captured Flows: inspect capture output, author Flow Steps with the runtime evidence in mind, mark hydratable Steps with `observation: null`, and run `tourguide validate --hydrate <tour>`.
-- Write authored JSON at `.tourguide/tours/<human-slug>.tour.json`.
+- Use capture-first hydration for captured Flows: inspect capture output, author Flow Steps with the runtime evidence in mind, mark hydratable Steps with `observation: null`, and run `elic validate --hydrate <explanation>`.
+- Write authored JSON at `.elic/explanations/<human-slug>.explanation.json`.
 - Minimize LLM output by omitting generated fields.
-- Run `tourguide validate --hydrate <tour>`.
+- Run `elic validate --hydrate <explanation>`.
 - If hydration or validation fails, fix authored semantic fields and rerun.
-- Optionally run `tourguide validate --hydrate --lint <tour>` for quality warnings.
-- Tell the user how to open the hydrated Tour.
+- Optionally run `elic validate --hydrate --lint <explanation>` for quality warnings.
+- Tell the user how to open the hydrated Explanation.
 
 The LLM should not hand-author:
 
@@ -620,8 +620,8 @@ The LLM should not hand-author:
 
 The LLM may author:
 
-- Tour title and description.
-- Optional goal when the Tour is meant to be maintained or refreshed later.
+- Explanation title and description.
+- Optional goal when the Explanation is meant to be maintained or refreshed later.
 - Topics, Flows, and Steps.
 - Step bodies.
 - Anchor targets.
@@ -631,4 +631,4 @@ The LLM may author:
 - `diffHunk` patch data when explaining diffs.
 - `embeddedExcerpt` content when embedded evidence is the primary target.
 
-Ephemeral implementation-summary Tours normally omit `goal`, but they still require `createdAt` and hydrated evidence.
+Ephemeral implementation-summary Explanations normally omit `goal`, but they still require `createdAt` and hydrated evidence.

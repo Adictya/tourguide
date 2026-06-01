@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "id": "550e8400-e29b-41d4-a716-446655440102",
+  "title": "Core Package Overview",
+  "description": "Shows the core package role as the loading layer above validated Explanation JSON.",
+  "createdAt": "2026-05-24T12:34:56.000Z",
+  "goal": "Maintain a compact package overview of the ELIC core layer.",
+  "topics": [
+    {
+      "title": "1. Package",
+      "items": [
+        {
+          "kind": "step",
+          "body": "`@elic/core` sits above schema and provides the loading boundary for Explanation artifacts.",
+          "anchor": {
+            "kind": "fileRange",
+            "path": "packages/core/package.json",
+            "range": {
+              "startLine": 1,
+              "endLine": 24
+            }
+          }
+        },
+        {
+          "kind": "step",
+          "body": "The public core entrypoint exports loading APIs only; it does not introduce a renderer-specific read model for the TUI POC.",
+          "anchor": {
+            "kind": "fileRange",
+            "path": "packages/core/src/index.ts",
+            "range": {
+              "startLine": 1,
+              "endLine": 2
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

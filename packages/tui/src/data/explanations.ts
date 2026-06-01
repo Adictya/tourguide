@@ -1,19 +1,17 @@
 import { readdir, readFile } from "node:fs/promises";
 import { basename, join, relative, resolve } from "node:path";
 
-import { normalizeTour } from "@tourguide/core";
+import type { Explanation } from "@elic/schema";
 
-import type { LoadedTour, TourFile } from "../types.js";
-
-type RawTour = Parameters<typeof normalizeTour>[0];
+import type { ExplanationFile, LoadedExplanation } from "../types.js";
 
 const cwd = process.cwd();
 
-const readTourDirectory = async (directory: string) => {
+const readExplanationDirectory = async (directory: string) => {
   try {
     const entries = await readdir(directory, { withFileTypes: true });
     return entries
-      .filter((entry) => entry.isFile() && entry.name.endsWith(".tour.json"))
+      .filter((entry) => entry.isFile() && entry.name.endsWith(".explanation.json"))
       .map((entry) => join(directory, entry.name));
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
@@ -21,7 +19,7 @@ const readTourDirectory = async (directory: string) => {
   }
 };
 
-const parseTourSummary = (contents: string, filePath: string): TourFile => {
+const parseExplanationSummary = (contents: string, filePath: string): ExplanationFile => {
   try {
     const parsed = JSON.parse(contents) as {
       title?: unknown;
@@ -50,25 +48,25 @@ const parseTourSummary = (contents: string, filePath: string): TourFile => {
   }
 };
 
-export const loadTours = async (): Promise<TourFile[]> => {
+export const loadExplanations = async (): Promise<ExplanationFile[]> => {
   const files = Array.from(
     new Set([
-      ...(await readTourDirectory(join(cwd, ".tourguide", "tours"))),
-      ...(await readTourDirectory(cwd)),
-      ...(await readTourDirectory(join(cwd, "tours"))),
+      ...(await readExplanationDirectory(join(cwd, ".elic", "explanations"))),
+      ...(await readExplanationDirectory(cwd)),
+      ...(await readExplanationDirectory(join(cwd, "explanations"))),
     ]),
   ).sort();
 
   return Promise.all(
-    files.map(async (filePath) => parseTourSummary(await readFile(filePath, "utf8"), filePath)),
+    files.map(async (filePath) => parseExplanationSummary(await readFile(filePath, "utf8"), filePath)),
   );
 };
 
-export const loadTour = async (tourFile: TourFile): Promise<LoadedTour> => {
-  const filePath = resolve(cwd, tourFile.path);
-  const rawTour = JSON.parse(await readFile(filePath, "utf8")) as RawTour;
+export const loadExplanation = async (explanationFile: ExplanationFile): Promise<LoadedExplanation> => {
+  const filePath = resolve(cwd, explanationFile.path);
+  const explanation = JSON.parse(await readFile(filePath, "utf8")) as Explanation;
   return {
-    file: tourFile,
-    tour: normalizeTour(rawTour),
+    file: explanationFile,
+    explanation,
   };
 };

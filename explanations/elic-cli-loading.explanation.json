@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "id": "550e8400-e29b-41d4-a716-446655440202",
+  "title": "ELIC CLI Loading Path",
+  "description": "Explains how the current CLI load command reads and validates an Explanation artifact.",
+  "createdAt": "2026-06-01T00:00:00.000Z",
+  "goal": "Maintain an implementation summary of the current ELIC CLI loading path while validation and hydration commands are rebuilt.",
+  "topics": [
+    {
+      "title": "1. CLI Entry",
+      "items": [
+        {
+          "kind": "flow",
+          "title": "Load Command Path",
+          "steps": [
+            {
+              "kind": "step",
+              "body": "The CLI exposes the `elic` command and currently wires a `load` subcommand for strict Explanation JSON inspection.",
+              "anchor": {
+                "kind": "fileRange",
+                "path": "packages/cli/src/index.ts",
+                "range": {
+                  "startLine": 10,
+                  "endLine": 57
+                }
+              }
+            },
+            {
+              "kind": "step",
+              "body": "`loadExplanation` reads the file through an injectable file-system service and then delegates JSON parsing to the schema package.",
+              "anchor": {
+                "kind": "fileRange",
+                "path": "packages/core/src/load-explanation.ts",
+                "range": {
+                  "startLine": 1,
+                  "endLine": 29
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "2. Error Formatting",
+      "items": [
+        {
+          "kind": "flow",
+          "title": "Schema Errors Become CLI Text",
+          "steps": [
+            {
+              "kind": "step",
+              "body": "The schema package exposes Explanation-specific parse, schema, and semantic errors plus a formatter that converts them into path-addressed validation issues.",
+              "anchor": {
+                "kind": "fileRange",
+                "path": "packages/schema/src/errors.ts",
+                "range": {
+                  "startLine": 1,
+                  "endLine": 49
+                }
+              }
+            },
+            {
+              "kind": "step",
+              "body": "The CLI turns read failures and validation issues into stderr output while preserving a non-zero process exit code.",
+              "anchor": {
+                "kind": "fileRange",
+                "path": "packages/cli/src/index.ts",
+                "range": {
+                  "startLine": 44,
+                  "endLine": 74
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

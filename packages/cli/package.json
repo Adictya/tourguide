@@ -1,10 +1,10 @@
 {
-  "name": "@tourguide/cli",
+  "name": "@elic/cli",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "bin": {
-    "tourguide": "./dist/index.js"
+    "elic": "./dist/index.js"
   },
   "exports": {
     ".": {
@@ -20,8 +20,8 @@
   "dependencies": {
     "@effect/cli": "latest",
     "@effect/platform-node": "latest",
-    "@tourguide/core": "workspace:*",
-    "@tourguide/schema": "workspace:*",
+    "@elic/core": "workspace:*",
+    "@elic/schema": "workspace:*",
     "effect": "latest"
   },
   "devDependencies": {

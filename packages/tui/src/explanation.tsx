@@ -1,18 +1,21 @@
 import { RGBA, type BoxRenderable, type ScrollBoxRenderable, SyntaxStyle } from "@opentui/core";
 import { render, useKeyboard, useTerminalDimensions, useTimeline } from "@opentui/solid";
-import type { NormalizedAnchor, NormalizedStep } from "@tourguide/core";
-import { createEffect, createSignal, For, Show, untrack } from "solid-js";
+import type { Anchor, Explanation as ExplanationArtifact, Step } from "@elic/schema";
+import { createEffect, createMemo, createSignal, For, Show, untrack } from "solid-js";
 
 import { borderChars, rowBorderChars } from "./components/borders.js";
 import { DottedBox } from "./components/layout.js";
-import { loadTour, loadTours } from "./data/tours.js";
-import type { LoadedTour } from "./types.js";
+import { loadExplanation, loadExplanations } from "./data/explanations.js";
+import type { LoadedExplanation } from "./types.js";
 
-const tourHeaderBorderChars = { ...borderChars, topLeft: "┌", topRight: "┤" };
-const tourFooterBorderChars = { ...borderChars, topLeft: "├", topRight: "┤" };
+const explanationHeaderBorderChars = { ...borderChars, topLeft: "┌", topRight: "┤" };
+const explanationFooterBorderChars = { ...borderChars, topLeft: "├", topRight: "┤" };
 const activeSectionColor = "#fff";
 const inactiveSectionColor = "#aaa";
 const animationDuration = 200;
+
+type DisplayStep = Step & { readonly globalIndex: number };
+type DisplayTopic = { readonly title: string; readonly steps: readonly DisplayStep[] };
 
 const syntaxStyle = SyntaxStyle.fromStyles({
   keyword: { fg: RGBA.fromHex("#ff6b6b"), bold: true },
@@ -23,7 +26,7 @@ const syntaxStyle = SyntaxStyle.fromStyles({
 });
 
 const SectionBox = (props: {
-  step: NormalizedStep;
+  step: DisplayStep;
   color: string;
   selected: boolean;
   refCapture: (ref: BoxRenderable) => void;
@@ -45,7 +48,7 @@ const SectionBox = (props: {
       onMouseUp={props.onClick}
     >
       <text fg={active() ? activeSectionColor : props.color}>
-        <b>{props.step.title}</b>
+        <b>Step {props.step.globalIndex + 1}</b>
       </text>
       <Show when={props.step.body}>
         {(body) => <text fg={active() ? "#ddd" : props.color}>{body()}</text>}
@@ -60,7 +63,7 @@ const TopicTitleBox = (props: { children: string }) => (
   </box>
 );
 
-const getAnchorContent = (anchor: NormalizedAnchor | undefined) => {
+const getAnchorContent = (anchor: Anchor | undefined) => {
   if (!anchor) return "No anchor selected for this step.";
   if (anchor.kind === "embeddedExcerpt") return anchor.content;
   if (anchor.kind === "fileRange") {
@@ -69,29 +72,51 @@ const getAnchorContent = (anchor: NormalizedAnchor | undefined) => {
   return anchor.hunk.patch;
 };
 
-const getAnchorLanguage = (anchor: NormalizedAnchor | undefined) => {
+const getAnchorLanguage = (anchor: Anchor | undefined) => {
   if (!anchor) return "text";
   if (anchor.kind === "embeddedExcerpt") return anchor.language ?? "text";
   if (anchor.kind === "fileRange") return anchor.snapshot?.language ?? "text";
   return "diff";
 };
 
-const StepPreview = (props: { step: NormalizedStep }) => {
-  const primaryAnchor = () =>
-    props.step.anchors.find((anchor) => anchor.id === props.step.primaryAnchorId) ?? props.step.anchors[0];
-
+const StepPreview = (props: { step: DisplayStep }) => {
   return (
     <box justifyContent="center" flexGrow={1} paddingX={4}>
       <Show when={props.step.body}>
         {(body) => <text fg="#ddd">{body()}</text>}
       </Show>
-      <code syntaxStyle={syntaxStyle} filetype={getAnchorLanguage(primaryAnchor())} content={getAnchorContent(primaryAnchor())} />
+      <code syntaxStyle={syntaxStyle} filetype={getAnchorLanguage(props.step.anchor)} content={getAnchorContent(props.step.anchor)} />
     </box>
   );
 };
 
-export const Tour = (props: { loadedTour: LoadedTour; onBack: () => void }) => {
-  const tour = () => props.loadedTour.tour;
+const collectDisplayTopics = (explanation: ExplanationArtifact): readonly DisplayTopic[] => {
+  let globalIndex = 0;
+
+  return explanation.topics.map((topic) => {
+    const steps: DisplayStep[] = [];
+
+    for (const item of topic.items) {
+      if (item.kind === "step") {
+        steps.push({ ...item, globalIndex });
+        globalIndex += 1;
+        continue;
+      }
+
+      for (const step of item.steps) {
+        steps.push({ ...step, globalIndex });
+        globalIndex += 1;
+      }
+    }
+
+    return { title: topic.title, steps };
+  });
+};
+
+export const Explanation = (props: { loadedExplanation: LoadedExplanation; onBack: () => void }) => {
+  const explanation = () => props.loadedExplanation.explanation;
+  const displayTopics = createMemo(() => collectDisplayTopics(explanation()));
+  const displaySteps = createMemo(() => displayTopics().flatMap((topic) => topic.steps));
   const [activeSection, setActiveSection] = createSignal(0);
   const [scrollPos, setScrollPos] = createSignal(0);
   const [collapsed, setCollapsed] = createSignal(true);
@@ -104,7 +129,7 @@ export const Tour = (props: { loadedTour: LoadedTour; onBack: () => void }) => {
 
   createEffect(() => {
     setSectionColorValues(
-      Array.from({ length: tour().steps.length }, (_, index) =>
+      Array.from({ length: displaySteps().length }, (_, index) =>
         index === activeSection() ? activeSectionColor : inactiveSectionColor,
       ),
     );
@@ -113,7 +138,7 @@ export const Tour = (props: { loadedTour: LoadedTour; onBack: () => void }) => {
   useKeyboard((key) => {
     if (key.name === "escape" || key.name === "backspace") props.onBack();
     if (key.name === "=") setCollapsed(!collapsed());
-    if (key.name === "j" || key.name === "down") setActiveSection((current) => Math.min(current + 1, tour().steps.length - 1));
+    if (key.name === "j" || key.name === "down") setActiveSection((current) => Math.min(current + 1, displaySteps().length - 1));
     if (key.name === "k" || key.name === "up") setActiveSection((current) => Math.max(current - 1, 0));
   });
 
@@ -178,17 +203,17 @@ export const Tour = (props: { loadedTour: LoadedTour; onBack: () => void }) => {
   return (
     <box flexGrow={1} flexDirection="row">
       <box flexGrow={0.4} maxWidth="40%" justifyContent="space-between">
-        <box border={["bottom", "right"]} alignItems="center" customBorderChars={tourHeaderBorderChars} borderColor="#555">
-          <text><b>{tour().title}</b></text>
+        <box border={["bottom", "right"]} alignItems="center" customBorderChars={explanationHeaderBorderChars} borderColor="#555">
+          <text><b>{explanation().title}</b></text>
         </box>
         <scrollbox ref={scrollRef} flexGrow={1} verticalScrollbarOptions={{ visible: false }} maxHeight={termDems().height - 4}>
           <DottedBox height={8} border={["bottom", "right"]} />
-          <For each={tour().topics}>
+          <For each={displayTopics()}>
             {(topic) => (
               <>
                 <TopicTitleBox>{topic.title}</TopicTitleBox>
                 <Show when={collapsed()}>
-                  <For each={topic.stepIds.map((stepId) => tour().steps.find((step) => step.id === stepId)).filter((step): step is NormalizedStep => step !== undefined)}>
+                  <For each={topic.steps}>
                     {(step) => (
                       <SectionBox
                         step={step}
@@ -207,15 +232,15 @@ export const Tour = (props: { loadedTour: LoadedTour; onBack: () => void }) => {
           </For>
           <DottedBox height={12} border={["bottom", "right"]} />
         </scrollbox>
-        <box border={["top", "right"]} customBorderChars={tourFooterBorderChars} borderColor="#555" paddingX={4}>
-          <text>{activeSection() + 1}/{tour().steps.length} Esc back</text>
+        <box border={["top", "right"]} customBorderChars={explanationFooterBorderChars} borderColor="#555" paddingX={4}>
+          <text>{activeSection() + 1}/{displaySteps().length} Esc back</text>
         </box>
       </box>
       <box flexGrow={0.6} maxWidth="60%">
         <box border={["bottom"]} borderColor="#555" paddingX={4}>
-          <text>{tour().steps[activeSection()]?.title ?? "No step"}</text>
+          <text>{displaySteps()[activeSection()] ? `Step ${activeSection() + 1}` : "No step"}</text>
         </box>
-        <Show when={tour().steps[activeSection()]}>
+        <Show when={displaySteps()[activeSection()]}>
           {(step) => <StepPreview step={step()} />}
         </Show>
       </box>
@@ -224,10 +249,10 @@ export const Tour = (props: { loadedTour: LoadedTour; onBack: () => void }) => {
 };
 
 if (import.meta.main) {
-  const tours = await loadTours();
-  const firstTour = tours[0];
-  if (firstTour) {
-    const loadedTour = await loadTour(firstTour);
-    render(() => <Tour loadedTour={loadedTour} onBack={() => {}} />);
+  const explanations = await loadExplanations();
+  const firstExplanation = explanations[0];
+  if (firstExplanation) {
+    const loadedExplanation = await loadExplanation(firstExplanation);
+    render(() => <Explanation loadedExplanation={loadedExplanation} onBack={() => {}} />);
   }
 }

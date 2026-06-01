@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "550e8400-e29b-41d4-a716-446655440101",
+  "title": "Schema Package Overview",
+  "description": "Shows the schema package as the strict JSON contract and validation layer.",
+  "createdAt": "2026-05-24T12:34:56.000Z",
+  "goal": "Maintain a compact package overview of the ELIC schema layer.",
+  "topics": [
+    {
+      "title": "1. Package",
+      "items": [
+        {
+          "kind": "step",
+          "body": "`@elic/schema` owns the ELIC Explanation contract and validation dependency.",
+          "anchor": {
+            "kind": "fileRange",
+            "path": "packages/schema/package.json",
+            "range": {
+              "startLine": 1,
+              "endLine": 24
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,13 +1,13 @@
-import type { NormalizedTour } from "@tourguide/core";
+import type { Explanation } from "@elic/schema";
 
-export type TourFile = {
+export type ExplanationFile = {
   path: string;
   title: string;
   goal?: string | undefined;
   description?: string | undefined;
 };
 
-export type LoadedTour = {
-  file: TourFile;
-  tour: NormalizedTour;
+export type LoadedExplanation = {
+  file: ExplanationFile;
+  explanation: Explanation;
 };

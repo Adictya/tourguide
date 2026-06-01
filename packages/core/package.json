@@ -1,5 +1,5 @@
 {
-  "name": "@tourguide/core",
+  "name": "@elic/core",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -14,7 +14,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@tourguide/schema": "workspace:*",
+    "@elic/schema": "workspace:*",
     "effect": "latest"
   },
   "devDependencies": {

@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "id": "550e8400-e29b-41d4-a716-446655440203",
+  "title": "Solid 2.0 Effects + Async Explanation",
+  "description": "Explains why Solid 2.0 split effects into compute and apply phases and how async readiness flows through scheduling and boundaries.",
+  "createdAt": "2026-06-01T00:00:00.000Z",
+  "topics": [
+    {
+      "title": "1. Why Split Effects",
+      "items": [
+        {
+          "kind": "step",
+          "body": "The old single callback mixed dependency discovery with side effects. Splitting compute from apply lets the runtime discover dependencies and pending async before user effects run.",
+          "anchor": {
+            "kind": "embeddedExcerpt",
+            "language": "typescript",
+            "content": "createEffect(\n  () => source(),\n  value => doSideEffect(value)\n)"
+          }
+        }
+      ]
+    },
+    {
+      "title": "2. Async Readiness",
+      "items": [
+        {
+          "kind": "flow",
+          "title": "Compute Before Apply",
+          "steps": [
+            {
+              "kind": "step",
+              "body": "The compute phase reads reactive sources and returns the value that the later side-effect phase will consume.",
+              "anchor": {
+                "kind": "embeddedExcerpt",
+                "language": "typescript",
+                "content": "() => source()"
+              }
+            },
+            {
+              "kind": "step",
+              "body": "The apply phase runs after compute work has settled, so async readiness can be coordinated before side effects touch the outside world.",
+              "anchor": {
+                "kind": "embeddedExcerpt",
+                "language": "typescript",
+                "content": "value => doSideEffect(value)"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

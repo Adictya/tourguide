@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "id": "550e8400-e29b-41d4-a716-446655440001",
-  "title": "Solid Effects Short Tour",
-  "description": "A compact v1 Tour fixture for schema validation.",
+  "title": "Solid Effects Short Explanation",
+  "description": "A compact v1 Explanation fixture for schema validation.",
   "createdAt": "2026-05-24T12:34:56.000Z",
   "topics": [
     {
@@ -10,7 +10,7 @@
       "items": [
         {
           "kind": "step",
-          "body": "This fixture validates the authored Tour shape.",
+          "body": "This fixture validates the authored Explanation shape.",
           "anchor": {
             "kind": "embeddedExcerpt",
             "content": "createEffect(() => render());",

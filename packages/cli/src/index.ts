@@ -3,25 +3,25 @@ import process from "node:process";
 
 import { Args, Command } from "@effect/cli";
 import { NodeContext, NodeRuntime } from "@effect/platform-node";
-import { loadTour, NodeTourFileSystemLive, type LoadTourError } from "@tourguide/core";
-import { formatTourValidationIssues } from "@tourguide/schema";
+import { loadExplanation, NodeExplanationFileSystemLive, type LoadExplanationError } from "@elic/core";
+import { formatExplanationValidationIssues } from "@elic/schema";
 import { Console, Effect } from "effect";
 
-const tourPath = Args.text({ name: "tour.json" });
+const explanationPath = Args.text({ name: "explanation.json" });
 
-const loadCommand = Command.make("load", { path: tourPath }, ({ path }) =>
-  loadTour(path).pipe(
-    Effect.provide(NodeTourFileSystemLive),
-    Effect.flatMap((tour) =>
+const loadCommand = Command.make("load", { path: explanationPath }, ({ path }) =>
+  loadExplanation(path).pipe(
+    Effect.provide(NodeExplanationFileSystemLive),
+    Effect.flatMap((explanation) =>
       Console.log(JSON.stringify({
         path,
-        id: tour.id,
-        title: tour.title,
-        description: tour.description,
+        id: explanation.id,
+        title: explanation.title,
+        description: explanation.description,
       }, null, 2)),
     ),
     Effect.catchAll((error) =>
-      formatLoadTourError(error).pipe(
+      formatLoadExplanationError(error).pipe(
         Effect.flatMap(Console.error),
         Effect.zipRight(Effect.sync(() => {
           process.exitCode = 1;
@@ -29,24 +29,39 @@ const loadCommand = Command.make("load", { path: tourPath }, ({ path }) =>
       ),
     ),
   ),
-).pipe(Command.withDescription("Read and validate a Tour JSON file"));
+).pipe(Command.withDescription("Read and validate an Explanation JSON file"));
 
-const command = Command.make("tourguide").pipe(
-  Command.withDescription("Open, inspect, and validate TourGuide Tours"),
-  Command.withSubcommands([loadCommand]),
+const validateCommand = Command.make("validate", { path: explanationPath }, ({ path }) =>
+  loadExplanation(path).pipe(
+    Effect.provide(NodeExplanationFileSystemLive),
+    Effect.flatMap(() => Console.log(`valid: ${path}`)),
+    Effect.catchAll((error) =>
+      formatLoadExplanationError(error).pipe(
+        Effect.flatMap(Console.error),
+        Effect.zipRight(Effect.sync(() => {
+          process.exitCode = 1;
+        })),
+      ),
+    ),
+  ),
+).pipe(Command.withDescription("Validate an Explanation JSON file"));
+
+const command = Command.make("elic").pipe(
+  Command.withDescription("Open, inspect, and validate ELIC Explanations"),
+  Command.withSubcommands([loadCommand, validateCommand]),
 );
 
 const cli = Command.run(command, {
-  name: "TourGuide CLI",
+  name: "ELIC CLI",
   version: "v0.1.0",
 });
 
-const formatLoadTourError = (error: LoadTourError): Effect.Effect<string> => {
-  if (error._tag === "TourFileReadError") {
+const formatLoadExplanationError = (error: LoadExplanationError): Effect.Effect<string> => {
+  if (error._tag === "ExplanationFileReadError") {
     return Effect.succeed(`Failed to read ${error.path}: ${formatCause(error.cause)}`);
   }
 
-  return formatTourValidationIssues(error).pipe(
+  return formatExplanationValidationIssues(error).pipe(
     Effect.map((issues) => issues.map((issue) => `${issue.path}: ${issue.message}`).join("\n")),
   );
 };

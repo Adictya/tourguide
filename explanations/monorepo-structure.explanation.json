@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "id": "550e8400-e29b-41d4-a716-446655440201",
+  "title": "ELIC Monorepo Structure",
+  "description": "Walks through the package boundaries and data flow in the ELIC monorepo.",
+  "createdAt": "2026-05-24T12:34:56.000Z",
+  "goal": "Maintain an architecture overview of the active ELIC TypeScript packages and the isolated legacy Neovim adapter.",
+  "topics": [
+    {
+      "title": "1. Workspace Map",
+      "items": [
+        {
+          "kind": "step",
+          "body": "The repository root owns the Bun workspace. `packages/*` is the package boundary, and root scripts build packages in dependency order: schema, core, TUI, then CLI.",
+          "anchor": {
+            "kind": "fileRange",
+            "path": "package.json",
+            "range": {
+              "startLine": 1,
+              "endLine": 15
+            }
+          }
+        },
+        {
+          "kind": "flow",
+          "title": "Core Package Stack",
+          "steps": [
+            {
+              "kind": "step",
+              "body": "`@elic/schema` is the lowest-level package. It exports the Explanation contract, parser, validation helpers, and shared domain types.",
+              "anchor": {
+                "kind": "fileRange",
+                "path": "packages/schema/src/index.ts",
+                "range": {
+                  "startLine": 1,
+                  "endLine": 91
+                }
+              }
+            },
+            {
+              "kind": "step",
+              "body": "`@elic/core` builds on schema. It owns the file-loading boundary for strict Explanation JSON and does not define a separate surface-shaped data model.",
+              "anchor": {
+                "kind": "fileRange",
+                "path": "packages/core/src/index.ts",
+                "range": {
+                  "startLine": 1,
+                  "endLine": 2
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "2. User-Facing Layers",
+      "items": [
+        {
+          "kind": "flow",
+          "title": "Opening Explanations Locally",
+          "steps": [
+            {
+              "kind": "step",
+              "body": "`@elic/tui` owns terminal UI screens. The home screen discovers `.explanation.json` files from the ELIC artifact locations.",
+              "anchor": {
+                "kind": "fileRange",
+                "path": "packages/tui/src/data/explanations.ts",
+                "range": {
+                  "startLine": 1,
+                  "endLine": 74
+                }
+              }
+            },
+            {
+              "kind": "step",
+              "body": "`@elic/cli` is the command surface. It loads Explanation JSON with core and reports validation problems through the schema formatter.",
+              "anchor": {
+                "kind": "fileRange",
+                "path": "packages/cli/src/index.ts",
+                "range": {
+                  "startLine": 1,
+                  "endLine": 74
+                }
+              }
+            }
+          ]
+        },
+        {
+          "kind": "step",
+          "body": "`packages/tourguide.nvim` remains a Legacy Adapter. Its command names and Lua module names are intentionally outside the active ELIC Explanation contract.",
+          "anchor": {
+            "kind": "fileRange",
+            "path": "packages/tourguide.nvim/package.json",
+            "range": {
+              "startLine": 1,
+              "endLine": 9
+            }
+          }
+        }
+      ]
+    },
+    {
+      "title": "3. Data Flow",
+      "items": [
+        {
+          "kind": "flow",
+          "title": "Parse To Presentation",
+          "steps": [
+            {
+              "kind": "step",
+              "body": "Validation starts by decoding strict JSON with excess properties rejected, then applies semantic checks such as unique Topic and Flow slugs.",
+              "anchor": {
+                "kind": "fileRange",
+                "path": "packages/schema/src/validate.ts",
+                "range": {
+                  "startLine": 21,
+                  "endLine": 85
+                }
+              }
+            },
+            {
+              "kind": "step",
+              "body": "After validation, core returns the Explanation artifact itself. Presentation Surfaces can traverse Topics, Flows, and Steps without changing the artifact contract.",
+              "anchor": {
+                "kind": "fileRange",
+                "path": "packages/core/src/load-explanation.ts",
+                "range": {
+                  "startLine": 1,
+                  "endLine": 29
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
