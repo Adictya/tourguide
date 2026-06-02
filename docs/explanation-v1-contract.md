@@ -2,6 +2,8 @@
 
 This document captures the current Explanation v1 artifact, authoring, validation, hydration, and Presentation Surface contract. `CONTEXT.md` remains the glossary; this file is the working product/specification contract.
 
+ELIC is presentation-first. The v1 artifact exists so an AI-generated answer about code can move from an agent into a local Presentation Surface as a navigable, grounded Explanation Session. The artifact may be opened once and discarded, or saved when later discovery or revision is useful.
+
 ## Status
 
 This is a draft based on accepted domain decisions. Existing schema, core, CLI, and skill implementation may be treated as obsolete unless explicitly carried forward. The current TUI only preserves visual direction, not its data model.
@@ -10,9 +12,11 @@ This is a draft based on accepted domain decisions. Existing schema, core, CLI, 
 
 An Explanation is a strict JSON artifact. It is not an Explanation Session, a rendered screen, or a Presentation Surface.
 
-The canonical authored location is `.elic/explanations/<human-slug>.explanation.json`.
+The artifact is the transport and validation boundary between agents and Presentation Surfaces. It should not be treated as evidence that ELIC is a wiki, docs site, living documentation platform, or durable onboarding tour system.
 
-CLI commands may accept any explicit path. Default discovery should prefer `.elic/explanations/*.explanation.json`.
+The saved authored location is `.elic/explanations/<human-slug>.explanation.json`.
+
+CLI commands may accept any explicit path. One-off Explanations may live outside `.elic/explanations/` and do not need to be kept in the repository. Default discovery should prefer `.elic/explanations/*.explanation.json` because those are the Explanations the user chose to save.
 
 Explanation files must use strict JSON, not JSONC, YAML, Lua, or Markdown-only output.
 
@@ -29,7 +33,7 @@ Required fields:
 
 Optional fields:
 
-- `goal`: LLM-facing maintenance/revision intent. Omit for ephemeral one-off Explanations.
+- `goal`: LLM-facing maintenance/revision intent. Omit for one-off Explanations.
 - `defaultDetailLevel`: numeric recommended starting Detail Level. Allowed values are `1`, `2`, `3`, `4`. If omitted, default is `3`.
 - `repo`: repository context, required in hydrated output when any `fileRange` Anchor exists.
 
@@ -561,7 +565,8 @@ Active Surfaces are terminal and OpenCode.
 
 Minimum Active Surface capabilities:
 
-- Open an Explanation.
+- Open an Explanation from an explicit path, including a one-off generated artifact.
+- Discover saved Explanations from `.elic/explanations/*.explanation.json` when the user asks for a picker or recent/saved list.
 - Show Explanation title and description.
 - Maintain Explanation Session state outside the Explanation artifact.
 - Navigate Steps with next/previous.
@@ -601,15 +606,18 @@ Legacy Adapter:
 
 Recommended agent workflow:
 
+- Start from the user's current code-understanding question, such as a bug diagnosis, PR review, implementation summary, code path, or library architecture explanation.
 - Inspect the target repository before writing the Explanation.
+- Decide whether the Explanation is one-off or saved. One-off is the default unless the user wants later discovery or revision.
+- Choose the output path from that persistence decision: use any explicit path for one-off Explanations, and use `.elic/explanations/<human-slug>.explanation.json` for saved Explanations.
+- Include `goal` only when the Explanation is saved and future LLM revision or refresh should preserve the original authoring intent.
 - When a concrete runtime path is needed, run or request DAP, targeted OTel, or targeted structured-log capture before finalizing the captured Flow.
 - Use capture-first hydration for captured Flows: inspect capture output, author Flow Steps with the runtime evidence in mind, mark hydratable Steps with `observation: null`, and run `elic validate --hydrate <explanation>`.
-- Write authored JSON at `.elic/explanations/<human-slug>.explanation.json`.
 - Minimize LLM output by omitting generated fields.
 - Run `elic validate --hydrate <explanation>`.
 - If hydration or validation fails, fix authored semantic fields and rerun.
 - Optionally run `elic validate --hydrate --lint <explanation>` for quality warnings.
-- Tell the user how to open the hydrated Explanation.
+- Tell the user how to open the hydrated Explanation and whether it was saved or just generated for the current question.
 
 The LLM should not hand-author:
 
@@ -621,7 +629,7 @@ The LLM should not hand-author:
 The LLM may author:
 
 - Explanation title and description.
-- Optional goal when the Explanation is meant to be maintained or refreshed later.
+- Optional goal when the Explanation is saved and meant to be refreshed later.
 - Topics, Flows, and Steps.
 - Step bodies.
 - Anchor targets.
@@ -631,4 +639,4 @@ The LLM may author:
 - `diffHunk` patch data when explaining diffs.
 - `embeddedExcerpt` content when embedded evidence is the primary target.
 
-Ephemeral implementation-summary Explanations normally omit `goal`, but they still require `createdAt` and hydrated evidence.
+One-off Explanations normally omit `goal`, but they still require `createdAt` and hydrated evidence.

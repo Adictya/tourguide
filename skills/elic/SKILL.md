@@ -1,6 +1,6 @@
 ---
 name: elic
-description: Create strict JSON ELIC v1 Explanation artifacts for guided architecture, code path, PR, implementation-summary, and static debug-flow explanations. Use this skill when the user asks for an ELIC explanation, architecture explanation, PR explanation, implementation explanation, or debug diagnosis that should be viewable with ELIC.
+description: Create strict JSON ELIC v1 Explanation artifacts for task-scoped code understanding, including bug diagnoses, PR explanations, architecture explanations, implementation summaries, code paths, and static debug flows. Use this skill when the user asks for a tailored code explanation that should be navigable and grounded in ELIC.
 metadata:
   author: adictya
   version: "0.2"
@@ -10,22 +10,24 @@ metadata:
 
 ## Purpose
 
-ELIC Explanations are strict JSON artifacts rendered by ELIC Presentation Surfaces. Your job is to inspect the target repository, create a grounded authored Explanation artifact, hydrate and validate it with the CLI, and tell the user how to open it.
+ELIC Explanations are strict JSON artifacts rendered by ELIC Presentation Surfaces. Your job is to inspect the target repository, turn the user's current code-understanding question into a grounded authored Explanation artifact, hydrate and validate it with the CLI, and tell the user how to open it.
+
+Most Explanations are one-off answers and do not need to be saved in the repository. Save an Explanation only when the user asks for it or when later discovery/revision is useful.
 
 Use `CONTEXT.md` for language and `docs/explanation-v1-contract.md` for the v1 artifact contract. If implementation and docs disagree, follow the contract docs unless the user explicitly asks to work with legacy scaffold code.
 
 ## Workflow
 
 1. Inspect the target codebase before writing the Explanation.
-2. Decide whether the Explanation is ephemeral or durable. Include `goal` only when future LLM revision/maintenance is useful.
-3. Create `.elic/explanations/<short-human-slug>.explanation.json` in the target repository.
+2. Decide whether the Explanation is one-off or saved. Default to one-off unless the user asks to keep it or future revision is useful.
+3. Choose an output path. Use any explicit `.explanation.json` path for one-off Explanations, and use `.elic/explanations/<short-human-slug>.explanation.json` for saved Explanations.
 4. Write strict JSON using `schemaVersion: 1` and the v1 authored shape.
 5. Use exact repo-relative POSIX paths and inclusive line ranges after reading files.
 6. Split multi-location material into adjacent Steps, usually inside a Flow.
-7. Run `elic validate --hydrate .elic/explanations/<short-human-slug>.explanation.json`.
+7. Run `elic validate --hydrate <explanation-path>`.
 8. If hydration or validation fails, fix authored semantic fields and rerun validation.
-9. Optionally run `elic validate --hydrate --lint .elic/explanations/<short-human-slug>.explanation.json` for quality warnings.
-10. Tell the user how to open it with `elic view .elic/explanations/<short-human-slug>.explanation.json`.
+9. Optionally run `elic validate --hydrate --lint <explanation-path>` for quality warnings, especially for saved Explanations.
+10. Tell the user how to open it with `elic view <explanation-path>` and whether it was saved or generated for the current question.
 
 For runtime evidence work, see [Execution Capture Reference](../../docs/EXECUTION-CAPTURE.md). Treat it as prototype guidance only; do not add capture instructions to v1 Explanations.
 
@@ -96,11 +98,12 @@ This is the minimal authored shape. The CLI hydrates generated file evidence fie
 ## Authoring Rules
 
 - Write strict JSON, not JSONC, YAML, Lua, or Markdown-only output.
-- Use `.explanation.json` filenames under `.elic/explanations/`.
+- Use `.explanation.json` filenames.
+- Put saved Explanations under `.elic/explanations/`; one-off Explanations may use any explicit path.
 - Use a UUID for `id`; prefer CLI/scaffold/tool generation when available.
 - Use ISO 8601 for `createdAt`; preserve it during revisions.
 - Use `description` for user-facing contents summary.
-- Use `goal` only for durable Explanations that may need future LLM refresh.
+- Use `goal` only for saved Explanations that may need future LLM refresh.
 - Use `defaultDetailLevel` only when the Explanation should recommend a starting level other than the default Deep Dive value of `3`.
 - Use `minDetailLevel` on Steps or Flows when content should appear only at Explore or Deep Dive.
 - Keep Topic and Flow titles plain text.
@@ -153,4 +156,4 @@ This is the minimal authored shape. The CLI hydrates generated file evidence fie
 - Do not invent file paths, line ranges, diff hunks, symbols, or APIs.
 - Do not embed whole files by default.
 - Prefer one coherent Explanation over many tiny Explanations, but split when the material becomes too broad.
-- If the Explanation is ephemeral, omit `goal`; if it is meant to be maintained, include a concise LLM-facing `goal`.
+- If the Explanation is one-off, omit `goal`; if it is saved for later refresh, include a concise LLM-facing `goal`.
