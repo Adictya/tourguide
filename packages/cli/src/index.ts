@@ -46,9 +46,26 @@ const validateCommand = Command.make("validate", { path: explanationPath }, ({ p
   ),
 ).pipe(Command.withDescription("Validate an Explanation JSON file"));
 
+const viewCommand = Command.make("view", { path: explanationPath }, ({ path }) =>
+  Effect.tryPromise({
+    try: () => import("@elic/tui-beta"),
+    catch: (cause) => new Error(`Failed to load beta TUI: ${formatCause(cause)}`),
+  }).pipe(
+    Effect.flatMap(({ runTui }) => runTui(path)),
+    Effect.catchAll((error) =>
+      formatViewError(error).pipe(
+        Effect.flatMap(Console.error),
+        Effect.zipRight(Effect.sync(() => {
+          process.exitCode = 1;
+        })),
+      ),
+    ),
+  ),
+).pipe(Command.withDescription("Open an Explanation in the beta terminal UI"));
+
 const command = Command.make("elic").pipe(
   Command.withDescription("Open, inspect, and validate ELIC Explanations"),
-  Command.withSubcommands([loadCommand, validateCommand]),
+  Command.withSubcommands([loadCommand, validateCommand, viewCommand]),
 );
 
 const cli = Command.run(command, {
@@ -64,6 +81,23 @@ const formatLoadExplanationError = (error: LoadExplanationError): Effect.Effect<
   return formatExplanationValidationIssues(error).pipe(
     Effect.map((issues) => issues.map((issue) => `${issue.path}: ${issue.message}`).join("\n")),
   );
+};
+
+const formatViewError = (error: unknown): Effect.Effect<string> => {
+  if (isLoadExplanationError(error)) return formatLoadExplanationError(error);
+
+  return Effect.succeed(error instanceof Error ? error.message : String(error));
+};
+
+const isLoadExplanationError = (error: unknown): error is LoadExplanationError => {
+  if (typeof error !== "object" || error === null || !("_tag" in error)) return false;
+
+  return [
+    "ExplanationFileReadError",
+    "ExplanationJsonParseError",
+    "ExplanationSchemaError",
+    "ExplanationSemanticError",
+  ].includes(String(error._tag));
 };
 
 const formatCause = (cause: unknown): string => cause instanceof Error ? cause.message : String(cause);

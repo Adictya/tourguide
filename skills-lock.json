@@ -13,6 +13,12 @@
       "skillPath": "skills/productivity/handoff/SKILL.md",
       "computedHash": "1a78d774f8a59db5daa6e65e20a6596872fa8cde769f9a6e3a09b678dd5ae8cc"
     },
+    "opentui": {
+      "source": "anomalyco/opentui",
+      "sourceType": "github",
+      "skillPath": "packages/web/src/content/SKILL.md",
+      "computedHash": "6d829a80b60a5b96bd5dd9a4df41e6281d63300b6665711ecba4d8830a60bcae"
+    },
     "to-prd": {
       "source": "mattpocock/skills",
       "sourceType": "github",

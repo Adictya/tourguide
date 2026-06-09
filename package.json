@@ -3,14 +3,18 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "bin": {
+    "elic": "./bin/elic"
+  },
   "packageManager": "bun@1.3.13",
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
-    "build": "bun run --cwd packages/schema build && bun run --cwd packages/core build && bun run --cwd packages/tui build && bun run --cwd packages/cli build",
+    "build": "bun run --cwd packages/schema build && bun run --cwd packages/core build && bun run --cwd packages/tui build && bun run --cwd packages/tui-beta build && bun run --cwd packages/cli build",
     "test": "bun run --cwd packages/schema test && bun run --cwd packages/core test",
     "elic": "bun run packages/cli/src/index.ts",
+    "tui-beta": "ELIC_REPO_ROOT=\"$PWD\" bun run --cwd packages/tui-beta dev",
     "validate:fixture": "bun run elic validate packages/schema/fixtures/solid-effects-short.explanation.json"
   },
   "devDependencies": {

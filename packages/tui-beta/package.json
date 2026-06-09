@@ -1,11 +1,9 @@
 {
-  "name": "@elic/cli",
+  "name": "@elic/tui-beta",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "bin": {
-    "elic": "./dist/index.js"
-  },
+  "main": "src/index.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -13,17 +11,17 @@
     }
   },
   "scripts": {
+    "dev": "bun run ./src/index.ts",
     "build": "tsc -p tsconfig.json",
-    "start": "bun run src/index.ts",
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@effect/cli": "latest",
-    "@effect/platform-node": "latest",
     "@elic/core": "workspace:*",
     "@elic/schema": "workspace:*",
-    "@elic/tui-beta": "workspace:*",
-    "effect": "latest"
+    "@opentui/core": "^0.2.15",
+    "@opentui/solid": "^0.2.15",
+    "effect": "latest",
+    "solid-js": "^1.9.12"
   },
   "devDependencies": {
     "@types/node": "latest",
